@@ -96,6 +96,23 @@ function CheckContent() {
           </div>
         )}
 
+        {/* Report skeleton (shown during analysis before streaming starts) */}
+        {!isFromHistory && !displayReport && state !== "idle" && state !== "complete" && (
+          <div className="mb-6 animate-pulse space-y-4 rounded-xl border border-foreground/10 p-6">
+            <div className="h-6 w-2/3 rounded bg-foreground/10" />
+            <div className="space-y-2">
+              <div className="h-4 w-full rounded bg-foreground/[.06]" />
+              <div className="h-4 w-5/6 rounded bg-foreground/[.06]" />
+              <div className="h-4 w-4/6 rounded bg-foreground/[.06]" />
+            </div>
+            <div className="h-4 w-1/2 rounded bg-foreground/[.06]" />
+            <div className="space-y-2">
+              <div className="h-4 w-full rounded bg-foreground/[.06]" />
+              <div className="h-4 w-3/4 rounded bg-foreground/[.06]" />
+            </div>
+          </div>
+        )}
+
         {/* Report */}
         {displayReport && (
           <ReportView report={displayReport} meta={displayMeta} isStreaming={isStreaming} />

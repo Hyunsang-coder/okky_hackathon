@@ -16,10 +16,17 @@ export async function POST(req: Request) {
   // but streamText expects CoreMessage format (with content).
   const modelMessages = await convertToModelMessages(messages);
 
+  // Sliding window: keep last 10 messages (≈5 round-trips) to control token usage
+  const trimmedMessages = modelMessages.slice(-10);
+
   const result = streamText({
     model: defaultModel,
-    system: systemPrompt,
-    messages: modelMessages,
+    system: {
+      role: "system",
+      content: systemPrompt,
+      providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+    },
+    messages: trimmedMessages,
   });
 
   return result.toUIMessageStreamResponse();

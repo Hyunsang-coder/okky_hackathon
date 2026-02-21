@@ -9,9 +9,44 @@ export interface ProgressStep {
   detail?: string;
 }
 
+const STEP_WEIGHTS: Record<ProgressStepId, number> = {
+  keywords: 10,
+  github: 30,
+  tavily: 30,
+  ranking: 15,
+  report: 15,
+};
+
+function calcPercent(steps: ProgressStep[]): number {
+  let total = 0;
+  for (const step of steps) {
+    const w = STEP_WEIGHTS[step.id] ?? 0;
+    if (step.status === "completed" || step.status === "error") {
+      total += w;
+    } else if (step.status === "active") {
+      total += w * 0.5;
+    }
+  }
+  return Math.round(total);
+}
+
 export function AnalysisProgress({ steps }: { steps: ProgressStep[] }) {
+  const percent = calcPercent(steps);
+
   return (
     <div className="space-y-3">
+      {/* Progress bar */}
+      <div className="flex items-center gap-3">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/10">
+          <div
+            className="h-full rounded-full bg-foreground/60 transition-all duration-500 ease-out"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <span className="text-xs tabular-nums text-foreground/40">{percent}%</span>
+      </div>
+
+      {/* Step list */}
       {steps.map((step) => (
         <div key={step.id} className="flex items-start gap-3">
           <div className="mt-0.5 flex-shrink-0">

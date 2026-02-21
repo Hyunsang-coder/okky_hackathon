@@ -1,4 +1,5 @@
 import type { GitHubRepo, EcosystemSignalType } from "./types";
+import { fetchWithRetry } from "./fetch-with-retry";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
@@ -14,7 +15,7 @@ async function githubFetch(url: string): Promise<Response> {
   if (GITHUB_TOKEN) {
     headers.Authorization = `token ${GITHUB_TOKEN}`;
   }
-  return fetch(url, { headers });
+  return fetchWithRetry(url, { headers }, { timeoutMs: 10_000 });
 }
 
 async function searchWithFilters(
@@ -27,7 +28,7 @@ async function searchWithFilters(
   const results = await Promise.allSettled(
     queries.map(async (query) => {
       const q = encodeURIComponent(
-        `${query} in:description,readme stars:>${minStars} pushed:>${pushedAfter} -is:fork archived:false`
+        `${query} in:description,readme stars:>=${minStars} pushed:>${pushedAfter} -is:fork archived:false`
       );
       const url = `https://api.github.com/search/repositories?q=${q}&sort=stars&order=desc&per_page=10`;
       const res = await githubFetch(url);

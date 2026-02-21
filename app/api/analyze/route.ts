@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { defaultModel } from "@/lib/models";
+import { defaultModel, thinkingModel } from "@/lib/models";
 import { extractKeywords } from "@/lib/pipeline/extract-keywords";
 import { searchGitHub } from "@/lib/pipeline/search-github";
 import { searchTavily } from "@/lib/pipeline/search-tavily";
@@ -161,9 +161,12 @@ export async function POST(req: Request) {
           ranked.contextXml
         );
 
+        const reportModel =
+          extraction.complexity === "VERY_HIGH" ? thinkingModel : defaultModel;
+
         try {
           const result = streamText({
-            model: defaultModel,
+            model: reportModel,
             system: REPORT_SYSTEM_PROMPT,
             prompt: userPrompt,
           });

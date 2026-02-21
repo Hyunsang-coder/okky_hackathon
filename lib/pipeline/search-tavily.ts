@@ -1,4 +1,5 @@
 import type { TavilyResult } from "./types";
+import { fetchWithRetry } from "./fetch-with-retry";
 
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 
@@ -33,16 +34,20 @@ async function tavilySearch(
   }
 
   try {
-    const res = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    const res = await fetchWithRetry(
+      "https://api.tavily.com/search",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          api_key: TAVILY_API_KEY,
+          ...params,
+        }),
       },
-      body: JSON.stringify({
-        api_key: TAVILY_API_KEY,
-        ...params,
-      }),
-    });
+      { timeoutMs: 10_000 },
+    );
 
     if (!res.ok) {
       console.error(`Tavily search failed: ${res.status}`);

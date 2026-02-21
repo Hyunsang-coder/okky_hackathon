@@ -95,7 +95,7 @@ describe("searchGitHub", () => {
     mockFetch.mockImplementation((url: string) => {
       if (url.includes("search/repositories")) {
         // strict 검색 (stars:>10) → 빈 결과, broad 검색 (stars:>1) → 결과 있음
-        const isStrictSearch = url.includes(encodeURIComponent("stars:>10"));
+        const isStrictSearch = url.includes(encodeURIComponent("stars:>=10"));
         if (isStrictSearch) {
           return Promise.resolve(mockSearchResponse([]));
         }
@@ -214,7 +214,7 @@ describe("searchGitHub", () => {
     mockFetch.mockImplementation((url: string) => {
       if (url.includes("search/repositories")) {
         // strict: 빈 결과 → broad: 결과 있음
-        if (url.includes("stars%3E10")) {
+        if (url.includes("stars%3E%3D10")) {
           return Promise.resolve(mockSearchResponse([]));
         }
         return Promise.resolve(
