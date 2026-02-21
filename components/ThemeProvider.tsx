@@ -24,7 +24,7 @@ export function useTheme() {
 function applyColorScheme(scheme: ColorScheme) {
   const root = document.documentElement;
   for (const [key, value] of Object.entries(scheme.colors)) {
-    root.style.setProperty(`--${key}`, value);
+    root.style.setProperty(`--color-${key}`, value);
   }
 }
 

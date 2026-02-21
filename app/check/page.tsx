@@ -91,7 +91,7 @@ function CheckContent() {
 
         {/* Error */}
         {error && (
-          <div className="mb-6 rounded-xl border border-danger/20 bg-danger/5 p-4">
+          <div className="mb-6 rounded-xl border border-danger-20 bg-danger-5 p-4">
             <p className="text-sm text-danger">{error}</p>
           </div>
         )}
