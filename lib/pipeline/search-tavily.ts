@@ -66,6 +66,7 @@ export async function searchTavily(queries: {
   competitors: string;
   trends: string;
   technical: string;
+  korean?: string;
 }): Promise<TavilyResult[]> {
   const searches: Array<{
     params: TavilySearchParams;
@@ -107,6 +108,26 @@ export async function searchTavily(queries: {
       },
     },
   ];
+
+  // 한국어 검색 추가 (한국 블로그, 커뮤니티, 서비스 정보)
+  if (queries.korean) {
+    searches.push({
+      category: "korean",
+      params: {
+        query: queries.korean,
+        topic: "general",
+        search_depth: "advanced",
+        max_results: 5,
+        include_domains: [
+          "tistory.com",
+          "velog.io",
+          "disquiet.io",
+          "wanted.co.kr",
+          "okky.kr",
+        ],
+      },
+    });
+  }
 
   const results = await Promise.allSettled(
     searches.map(async ({ params, category }) => {

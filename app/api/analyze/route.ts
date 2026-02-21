@@ -109,33 +109,41 @@ export async function POST(req: Request) {
         send(encodeProgress("tavily", "started", "시장 정보 수집 중..."));
 
         const [githubResult, tavilyResult] = await Promise.allSettled([
-          searchGitHub(extraction.github_queries, extraction.topics),
+          searchGitHub(extraction.github_queries, extraction.topics, extraction.github_queries_ko),
           searchTavily(extraction.tavily_queries),
         ]);
+
+        const githubFailed = githubResult.status === "rejected";
+        const tavilyFailed = tavilyResult.status === "rejected";
 
         const github =
           githubResult.status === "fulfilled"
             ? githubResult.value
-            : { repos: [], signal: "NOVEL" as const };
+            : { repos: [], signal: "UNKNOWN" as const };
         const tavily =
           tavilyResult.status === "fulfilled" ? tavilyResult.value : [];
+
+        // 둘 다 실패한 경우 시그널을 UNKNOWN으로 강제 (NOVEL과 혼동 방지)
+        if (githubFailed && tavilyFailed) {
+          github.signal = "UNKNOWN";
+        }
 
         send(
           encodeProgress(
             "github",
-            githubResult.status === "fulfilled" ? "completed" : "error",
-            githubResult.status === "fulfilled"
-              ? `${github.repos.length}개 프로젝트 발견 (${github.signal})`
-              : "GitHub 검색 실패",
+            githubFailed ? "error" : "completed",
+            githubFailed
+              ? "GitHub 검색 실패 — 제한된 정보로 분석합니다"
+              : `${github.repos.length}개 프로젝트 발견 (${github.signal})`,
           )
         );
         send(
           encodeProgress(
             "tavily",
-            tavilyResult.status === "fulfilled" ? "completed" : "error",
-            tavilyResult.status === "fulfilled"
-              ? `${tavily.length}개 자료 발견`
-              : "웹 검색 실패",
+            tavilyFailed ? "error" : "completed",
+            tavilyFailed
+              ? "웹 검색 실패 — 제한된 정보로 분석합니다"
+              : `${tavily.length}개 자료 발견`,
           )
         );
 

@@ -16,10 +16,12 @@ export function dummyExtraction(idea: string): KeywordExtraction {
       .split(/\s+/)
       .filter((w) => w.length > 1)
       .slice(0, 3),
+    github_queries_ko: [idea.slice(0, 50)],
     tavily_queries: {
       competitors: idea,
       trends: idea,
       technical: idea,
+      korean: idea,
     },
     topics: [],
   };
@@ -127,8 +129,8 @@ export function dummyRankedResults(): RankedResults {
   return {
     github: [],
     tavily: [],
-    ecosystemSignal: "NOVEL",
+    ecosystemSignal: "UNKNOWN",
     contextXml:
-      '<ecosystem_signal type="NOVEL">검색 서비스 장애로 결과를 수집하지 못했습니다.</ecosystem_signal>',
+      '<ecosystem_signal type="UNKNOWN">검색 서비스 장애로 결과를 수집하지 못했습니다. 이는 아이디어의 가치와 무관한 기술적 장애입니다.</ecosystem_signal>',
   };
 }

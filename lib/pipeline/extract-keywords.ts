@@ -45,10 +45,12 @@ const KeywordExtractionSchema = z.object({
   reason: z.string(),
   alternative: z.string().optional(),
   github_queries: z.array(z.string()),
+  github_queries_ko: z.array(z.string()).optional(),
   tavily_queries: z.object({
     competitors: z.string(),
     trends: z.string(),
     technical: z.string(),
+    korean: z.string().optional(),
   }),
   topics: z.array(z.string()),
 });
@@ -96,7 +98,9 @@ const KEYWORD_EXTRACTION_PROMPT = `사용자의 아이디어를 분석하라.
 
 키워드 추출 시 주의사항:
 - github_queries: 영어로 3~5개, 각각 다른 관점 (도메인, 기술, 유의어). "in:description,readme" 같은 한정자는 포함하지 말 것.
-- tavily_queries: 각 카테고리별 자연어 검색 쿼리. 영어로 작성.
+- github_queries_ko: 한국어로 1~2개. 한국 개발자가 GitHub에 한국어로 작성했을 만한 키워드. 한국 시장/서비스에 특화된 아이디어일 때 특히 유용.
+- tavily_queries: competitors, trends, technical은 영어로 작성.
+- tavily_queries.korean: 한국어로 1개. 한국 블로그, 커뮤니티, 서비스 정보를 찾기 위한 자연어 검색 쿼리. 예: "반려동물 건강 관리 앱 추천", "네이버 카페 크롤링 방법".
 - topics: GitHub topic 태그 형식 (소문자, 하이픈). 2~4개.`;
 
 export async function extractKeywords(

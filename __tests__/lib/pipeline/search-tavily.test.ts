@@ -216,6 +216,63 @@ describe("searchTavily", () => {
   });
 });
 
+describe("searchTavily - 한국어 검색", () => {
+  it("korean 쿼리가 있으면 4개 카테고리를 병렬로 검색한다", async () => {
+    mockFetch.mockResolvedValue(
+      makeTavilyResponse([
+        { title: "Result", url: "https://example.com", content: "content", score: 0.8 },
+      ])
+    );
+
+    await searchTavily({ ...DEFAULT_QUERIES, korean: "반려동물 건강 관리 앱" });
+
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+  });
+
+  it("korean 카테고리에 한국 도메인이 포함된다", async () => {
+    mockFetch.mockResolvedValue(makeTavilyResponse([]));
+
+    await searchTavily({ ...DEFAULT_QUERIES, korean: "네이버 카페 크롤링" });
+
+    const bodies = mockFetch.mock.calls.map(
+      (c) => JSON.parse(c[1].body as string)
+    );
+
+    const koreanSearch = bodies.find((b) => b.query === "네이버 카페 크롤링");
+    expect(koreanSearch).toBeDefined();
+    expect(koreanSearch.include_domains).toContain("tistory.com");
+    expect(koreanSearch.include_domains).toContain("velog.io");
+    expect(koreanSearch.search_depth).toBe("advanced");
+  });
+
+  it("korean 쿼리가 없으면 3개 카테고리만 검색한다", async () => {
+    mockFetch.mockResolvedValue(makeTavilyResponse([]));
+
+    await searchTavily(DEFAULT_QUERIES);
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("korean 카테고리 결과에 category='korean' 라벨이 붙는다", async () => {
+    let callIdx = 0;
+    mockFetch.mockImplementation(() => {
+      callIdx++;
+      if (callIdx === 4) {
+        return Promise.resolve(
+          makeTavilyResponse([
+            { title: "한국 결과", url: "https://korean.com", content: "내용", score: 0.8 },
+          ])
+        );
+      }
+      return Promise.resolve(makeTavilyResponse([]));
+    });
+
+    const result = await searchTavily({ ...DEFAULT_QUERIES, korean: "테스트" });
+    const koreanResult = result.find((r) => r.url === "https://korean.com");
+    expect(koreanResult?.category).toBe("korean");
+  });
+});
+
 describe("searchTavily - API 키 없음", () => {
   it("TAVILY_API_KEY가 없으면 fetch 없이 빈 배열 반환", async () => {
     // 키 없는 모듈을 별도로 로드

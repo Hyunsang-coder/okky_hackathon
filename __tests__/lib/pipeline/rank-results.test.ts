@@ -212,4 +212,19 @@ describe("rankResults", () => {
     expect(result.ecosystemSignal).toBe("NOVEL");
     expect(result.contextXml).toBeTruthy();
   });
+
+  it("UNKNOWN 시그널 메시지에 검색 장애 안내가 포함된다", () => {
+    const result = rankResults([], [], "UNKNOWN", []);
+    expect(result.contextXml).toContain('ecosystem_signal type="UNKNOWN"');
+    expect(result.contextXml).toContain("검색 서비스 장애");
+    expect(result.contextXml).toContain("아이디어의 가치");
+  });
+
+  it("UNKNOWN 시그널은 NOVEL과 다른 메시지를 보여준다", () => {
+    const novel = rankResults([], [], "NOVEL", []);
+    const unknown = rankResults([], [], "UNKNOWN", []);
+    expect(novel.contextXml).toContain("발견되지 않았습니다");
+    expect(unknown.contextXml).not.toContain("발견되지 않았습니다");
+    expect(unknown.contextXml).toContain("장애");
+  });
 });

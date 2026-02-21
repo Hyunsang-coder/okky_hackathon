@@ -394,3 +394,64 @@ GitHub REST API와 Tavily Search API 호출에 타임아웃이 설정되지 않�
 - 스켈레톤은 리포트가 스트리밍되면 자연스럽게 대체되므로 별도 상태 관리 불필요
 - SSE 스키마, `parseReport`, `useAnalysis` 훅 변경 없음
 
+---
+
+## ADR-017: 한국어 검색 쿼리 추가 — 영어 전용 편향 해소
+
+### 상태
+승인됨
+
+### 맥락
+타겟 사용자가 한국 비개발자임에도 불구하고, GitHub 쿼리와 Tavily 쿼리가 모두 영어로만 생성되어 한국어 오픈소스, 한국 기술 블로그(tistory, velog), 한국 서비스/커뮤니티(disquiet, okky, wanted) 정보가 검색에서 완전히 누락되는 편향 문제가 있었다.
+
+### 결정
+**Phase 0+1 키워드 추출에 한국어 쿼리 필드를 추가:**
+- `github_queries_ko`: 한국어 GitHub 검색 쿼리 1~2개 (한국 개발자가 한국어로 작성한 레포 발견용)
+- `tavily_queries.korean`: 한국어 웹 검색 쿼리 1개 (한국 블로그, 커뮤니티, 서비스 정보 수집용)
+
+**GitHub 검색 변경:**
+- `searchGitHub(queries, topics)` → `searchGitHub(queries, topics, koreanQueries?)` 시그니처 확장
+- 영어 쿼리 3개 + 한국어 쿼리 2개 + topic 쿼리 → 최대 6개로 쿼리 풀 확장
+
+**Tavily 검색 변경:**
+- `korean` 쿼리가 있으면 4번째 카테고리로 병렬 검색 추가
+- `include_domains`: tistory.com, velog.io, disquiet.io, wanted.co.kr, okky.kr
+- `search_depth: "advanced"`, `max_results: 5`
+
+### 근거
+- 기존 API 호출 구조(Promise.allSettled)를 그대로 활용하여 사이드 이펙트 최소화
+- 한국어 쿼리는 optional 필드로 추가하여 하위 호환성 유지
+- Tavily의 include_domains에 한국 주요 기술 플랫폼을 지정하여 관련성 높은 한국어 결과 확보
+- GitHub 쿼리 최대 수를 5→6으로 소폭 확대 (API rate limit 영향 미미)
+
+---
+
+## ADR-018: 검색 장애와 NOVEL 시그널 분리 — UNKNOWN 시그널 도입
+
+### 상태
+승인됨
+
+### 맥락
+GitHub/Tavily 검색이 네트워크 장애 등으로 실패할 때 `{ repos: [], signal: "NOVEL" }`로 처리되어, "검색 장애로 결과를 못 가져온 것"과 "실제로 유사 프로젝트가 없는 새로운 아이디어"가 동일한 시그널로 LLM에 전달되었다. 이는 검색 장애 상황에서 "혁신적인 아이디어"로 오판하는 위험이 있었다.
+
+### 결정
+**`EcosystemSignalType`에 `UNKNOWN` 추가:**
+- `"ESTABLISHED" | "EMERGING" | "NOVEL"` → `"ESTABLISHED" | "EMERGING" | "NOVEL" | "UNKNOWN"`
+
+**route.ts 분기 변경:**
+- GitHub 검색 Promise가 rejected되면 signal을 `UNKNOWN`으로 설정 (기존: `NOVEL`)
+- 양쪽 모두 실패 시에도 `UNKNOWN` 강제 적용
+
+**rank-results.ts 컨텍스트 XML:**
+- UNKNOWN 시그널 전용 프롬프트 추가: "검색 서비스 장애로 인한 데이터 부재"임을 명시
+- LLM에게 confidence 0.3 이하, 재시도 권장, "없다"와 "못 찾았다"를 구분하도록 지시
+
+**진행 상태 메시지:**
+- 검색 실패 시 사용자에게 "제한된 정보로 분석합니다"를 명시적으로 안내
+
+### 근거
+- NOVEL과 UNKNOWN은 의미론적으로 전혀 다른 상태: NOVEL은 "기회 또는 높은 난이도", UNKNOWN은 "판단 불가"
+- LLM이 부재와 장애를 혼동하지 않으면 사용자에게 더 정직한 판정을 제공할 수 있음
+- 기존 NOVEL 시그널 처리 로직에 영향 없이 분기만 추가
+- dummyRankedResults도 UNKNOWN으로 변경하여 fallback 경로와 일관성 확보
+

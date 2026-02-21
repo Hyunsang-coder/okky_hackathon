@@ -314,6 +314,48 @@ describe("searchGitHub", () => {
     expect(result.repos).toHaveLength(0);
   });
 
+  it("한국어 쿼리를 검색에 포함한다", async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes("search/repositories")) {
+        return Promise.resolve(
+          mockSearchResponse([
+            makeGitHubRepo({ full_name: "ko/repo", stargazers_count: 50 }),
+          ])
+        );
+      }
+      if (url.includes("/readme")) {
+        return Promise.resolve(mockReadmeResponse("# README"));
+      }
+      return Promise.resolve(mockFailedResponse());
+    });
+
+    await searchGitHub(["main query"], [], ["반려동물 건강 앱"]);
+
+    const searchCalls = mockFetch.mock.calls
+      .map((c) => c[0] as string)
+      .filter((url) => url.includes("search/repositories"));
+
+    // 한국어 쿼리가 검색에 포함되어야 함
+    const hasKoreanQuery = searchCalls.some((url) =>
+      decodeURIComponent(url).includes("반려동물")
+    );
+    expect(hasKoreanQuery).toBe(true);
+  });
+
+  it("한국어 쿼리만 있어도 검색을 실행한다", async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes("search/repositories")) {
+        return Promise.resolve(mockSearchResponse([]));
+      }
+      return Promise.resolve(mockFailedResponse());
+    });
+
+    const result = await searchGitHub([], [], ["한국어 쿼리"]);
+
+    // 검색이 실행되었어야 함 (빈 쿼리+한국어 쿼리 → NOVEL이 아닌 검색 시도)
+    expect(mockFetch).toHaveBeenCalled();
+  });
+
   it("README 실패 시에도 레포는 반환한다", async () => {
     mockFetch.mockImplementation((url: string) => {
       if (url.includes("search/repositories")) {

@@ -103,17 +103,19 @@ async function fetchActivityInfo(
 
 export async function searchGitHub(
   queries: string[],
-  topics: string[]
+  topics: string[],
+  koreanQueries?: string[]
 ): Promise<{ repos: GitHubRepo[]; signal: EcosystemSignalType }> {
-  if (queries.length === 0) {
+  if (queries.length === 0 && (!koreanQueries || koreanQueries.length === 0)) {
     return { repos: [], signal: "NOVEL" };
   }
 
-  // Add topic-based queries
+  // Add topic-based queries and Korean queries
   const topicQueries = topics
     .slice(0, 2)
     .map((t) => `topic:${t}`);
-  const allQueries = [...queries.slice(0, 4), ...topicQueries].slice(0, 5);
+  const koQueries = (koreanQueries || []).slice(0, 2);
+  const allQueries = [...queries.slice(0, 3), ...koQueries, ...topicQueries].slice(0, 6);
 
   // Phase 1: strict search
   const sixMonthsAgo = new Date();

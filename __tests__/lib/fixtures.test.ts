@@ -37,6 +37,14 @@ describe("dummyExtraction", () => {
     expect(result.tavily_queries.competitors).toBe(idea);
     expect(result.tavily_queries.trends).toBe(idea);
     expect(result.tavily_queries.technical).toBe(idea);
+    expect(result.tavily_queries.korean).toBe(idea);
+  });
+
+  it("github_queries_ko에 아이디어 원문 일부를 넣는다", () => {
+    const idea = "반려동물 건강 앱";
+    const result = dummyExtraction(idea);
+    expect(result.github_queries_ko).toBeDefined();
+    expect(result.github_queries_ko!.length).toBeGreaterThan(0);
   });
 
   it("topics는 빈 배열이다", () => {
@@ -131,14 +139,14 @@ describe("dummyRankedResults", () => {
     expect(result.tavily).toEqual([]);
   });
 
-  it("NOVEL 시그널이다", () => {
-    expect(dummyRankedResults().ecosystemSignal).toBe("NOVEL");
+  it("UNKNOWN 시그널이다", () => {
+    expect(dummyRankedResults().ecosystemSignal).toBe("UNKNOWN");
   });
 
   it("contextXml에 장애 안내가 포함된다", () => {
     const result = dummyRankedResults();
     expect(result.contextXml).toContain("ecosystem_signal");
-    expect(result.contextXml).toContain("NOVEL");
+    expect(result.contextXml).toContain("UNKNOWN");
     expect(result.contextXml).toContain("장애");
   });
 });
@@ -171,6 +179,6 @@ describe("DUMMY_TAVILY_RESULTS", () => {
     expect(result.url).toBeTruthy();
     expect(result.content).toBeTruthy();
     expect(typeof result.score).toBe("number");
-    expect(["competitors", "trends", "technical"]).toContain(result.category);
+    expect(["competitors", "trends", "technical", "korean"]).toContain(result.category);
   });
 });

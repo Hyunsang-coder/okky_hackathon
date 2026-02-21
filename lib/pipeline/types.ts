@@ -5,7 +5,7 @@ export type DataStatus =
   | "AVAILABLE_PAID"
   | "BUILDABLE"
   | "UNAVAILABLE";
-export type EcosystemSignalType = "ESTABLISHED" | "EMERGING" | "NOVEL";
+export type EcosystemSignalType = "ESTABLISHED" | "EMERGING" | "NOVEL" | "UNKNOWN";
 export type PlatformRiskStatus = "NONE" | "OPEN" | "REVIEW_REQUIRED" | "ENTERPRISE_ONLY" | "DEPRECATED";
 export type LegalRiskSeverity = "NONE" | "CAUTION" | "HIGH_RISK";
 export type LegalRiskCategory = "개인정보" | "저작권" | "초상권" | "약관위반" | "기타";
@@ -37,10 +37,12 @@ export interface KeywordExtraction {
   platform_risk?: PlatformRisk;
   legal_risks?: LegalRisk[];
   github_queries: string[];
+  github_queries_ko?: string[];
   tavily_queries: {
     competitors: string;
     trends: string;
     technical: string;
+    korean?: string;
   };
   topics: string[];
 }
@@ -69,7 +71,7 @@ export interface TavilyResult {
   url: string;
   content: string;
   score: number;
-  category: "competitors" | "trends" | "technical";
+  category: "competitors" | "trends" | "technical" | "korean";
 }
 
 export interface SearchResults {
