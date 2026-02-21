@@ -4,24 +4,24 @@ import type { Verdict } from "@/lib/report";
 
 const VERDICT_COLORS: Record<Verdict, { bg: string; text: string; border: string }> = {
   "바이브코딩으로 가능": {
-    bg: "bg-green-500/10",
-    text: "text-green-500",
-    border: "border-green-500/30",
+    bg: "bg-success/10",
+    text: "text-success",
+    border: "border-success/30",
   },
   "조건부 가능": {
-    bg: "bg-yellow-500/10",
-    text: "text-yellow-500",
-    border: "border-yellow-500/30",
+    bg: "bg-warning/10",
+    text: "text-warning",
+    border: "border-warning/30",
   },
   "개발자 도움 필요": {
-    bg: "bg-orange-500/10",
-    text: "text-orange-500",
-    border: "border-orange-500/30",
+    bg: "bg-caution/10",
+    text: "text-caution",
+    border: "border-caution/30",
   },
   "현재 기술로 어려움": {
-    bg: "bg-red-500/10",
-    text: "text-red-500",
-    border: "border-red-500/30",
+    bg: "bg-danger/10",
+    text: "text-danger",
+    border: "border-danger/30",
   },
 };
 

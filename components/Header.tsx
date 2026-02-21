@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useTheme } from "./ThemeProvider";
+import { ColorSchemeSelector } from "./ColorSchemeSelector";
 
 export function Header() {
   const { theme, toggle } = useTheme();
@@ -12,13 +13,14 @@ export function Header() {
         <Link href="/" className="text-lg font-bold tracking-tight">
           VibCheck
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
           <Link
             href="/"
             className="rounded-lg px-3 py-1.5 text-sm text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-foreground"
           >
             새 아이디어
           </Link>
+          <ColorSchemeSelector />
           <button
             onClick={toggle}
             className="rounded-lg p-2 text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-foreground"
