@@ -9,16 +9,18 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { useAnalysis } from "@/hooks/useAnalysis";
 import { addHistory, getHistoryEntry } from "@/lib/history";
 import { parseReport, type ReportMeta } from "@/lib/report";
+import { downloadJSON, downloadMarkdown } from "@/lib/export";
 
 function CheckContent() {
   const searchParams = useSearchParams();
   const idea = searchParams.get("idea") ?? "";
   const historyId = searchParams.get("history") ?? "";
+  const isTest = searchParams.get("test") === "1";
   const startedRef = useRef(false);
   const savedRef = useRef(false);
 
   const { state, steps, report, reportMeta, searchContext, error, startAnalysis } =
-    useAnalysis();
+    useAnalysis(isTest ? "/api/test-analyze" : "/api/analyze");
 
   // Load from history
   const [historyReport, setHistoryReport] = useState("");
@@ -48,7 +50,7 @@ function CheckContent() {
 
   // Save to history on complete
   useEffect(() => {
-    if (state === "complete" && report && reportMeta && !savedRef.current) {
+    if (state === "complete" && report && reportMeta && !savedRef.current && !isTest) {
       savedRef.current = true;
       addHistory({
         idea,
@@ -74,17 +76,17 @@ function CheckContent() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
         {/* Idea card */}
         {displayIdea && (
-          <div className="mb-6 rounded-xl border border-foreground/10 bg-foreground/[.02] p-4">
-            <p className="text-xs font-medium text-foreground/40">
+          <div className="mb-6 rounded-xl border border-outline/55 bg-surface/60 p-4">
+            <p className="text-xs font-medium text-muted">
               입력한 아이디어
             </p>
             <p className="mt-1 text-foreground/80">{displayIdea}</p>
           </div>
         )}
 
-        {/* Progress (only during analysis) */}
-        {!isFromHistory && state !== "idle" && state !== "complete" && (
-          <div className="mb-6 rounded-xl border border-foreground/10 p-5">
+        {/* Progress */}
+        {!isFromHistory && state !== "idle" && (
+          <div className="mb-6 rounded-xl border border-outline/55 bg-surface/55 p-5">
             <AnalysisProgress steps={steps} />
           </div>
         )}
@@ -98,17 +100,17 @@ function CheckContent() {
 
         {/* Report skeleton (shown during analysis before streaming starts) */}
         {!isFromHistory && !displayReport && state !== "idle" && state !== "complete" && (
-          <div className="mb-6 animate-pulse space-y-4 rounded-xl border border-foreground/10 p-6">
-            <div className="h-6 w-2/3 rounded bg-foreground/10" />
+          <div className="mb-6 animate-pulse space-y-4 rounded-xl border border-outline/55 bg-surface/55 p-6">
+            <div className="h-6 w-2/3 rounded bg-surface-strong/80" />
             <div className="space-y-2">
-              <div className="h-4 w-full rounded bg-foreground/[.06]" />
-              <div className="h-4 w-5/6 rounded bg-foreground/[.06]" />
-              <div className="h-4 w-4/6 rounded bg-foreground/[.06]" />
+              <div className="h-4 w-full rounded bg-surface-strong/70" />
+              <div className="h-4 w-5/6 rounded bg-surface-strong/70" />
+              <div className="h-4 w-4/6 rounded bg-surface-strong/70" />
             </div>
-            <div className="h-4 w-1/2 rounded bg-foreground/[.06]" />
+            <div className="h-4 w-1/2 rounded bg-surface-strong/70" />
             <div className="space-y-2">
-              <div className="h-4 w-full rounded bg-foreground/[.06]" />
-              <div className="h-4 w-3/4 rounded bg-foreground/[.06]" />
+              <div className="h-4 w-full rounded bg-surface-strong/70" />
+              <div className="h-4 w-3/4 rounded bg-surface-strong/70" />
             </div>
           </div>
         )}
@@ -120,13 +122,27 @@ function CheckContent() {
 
         {/* Action buttons */}
         {isComplete && displayReport && (
-          <div className="mt-4 flex gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             <a
               href="/"
-              className="rounded-lg border border-foreground/10 px-4 py-2 text-sm text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-foreground"
+              className="rounded-lg border border-outline/60 bg-surface/70 px-4 py-2 text-sm text-muted transition-colors hover:border-primary hover:bg-primary-soft hover:text-foreground"
             >
               새 아이디어 검증하기
             </a>
+            <button
+              type="button"
+              onClick={() => downloadJSON(displayIdea, displayReport, displayMeta, displayContext)}
+              className="rounded-lg border border-outline/60 bg-surface/70 px-4 py-2 text-sm text-muted transition-colors hover:border-primary hover:bg-primary-soft hover:text-foreground"
+            >
+              JSON 다운로드
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadMarkdown(displayIdea, displayReport)}
+              className="rounded-lg border border-outline/60 bg-surface/70 px-4 py-2 text-sm text-muted transition-colors hover:border-primary hover:bg-primary-soft hover:text-foreground"
+            >
+              MD 다운로드
+            </button>
           </div>
         )}
 
@@ -147,7 +163,7 @@ export default function CheckPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground/60" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-outline/55 border-t-primary" />
         </div>
       }
     >
