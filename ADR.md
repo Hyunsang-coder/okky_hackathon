@@ -160,18 +160,60 @@ Vercel 기반으로 프론트·백엔드를 단일 프로젝트로 관리하며,
 ## ADR-008: 모델 용도별 분리 (Opus 제외)
 
 ### 상태
-승인됨
+수정됨 (ADR-009에 의해 프로바이더 변경)
 
 ### 맥락
 초기 설계에서 리포트 생성에 Opus를 사용했으나, 비용 대비 효과를 재평가함.
 
 ### 결정
-- 키워드 추출 + 사전심사: Haiku 4.5 (~$0.001)
-- 리포트 생성: Sonnet 4.6 (~$0.05)
-- 후속 채팅: Sonnet 4.6 (~$0.02~0.04)
-- Opus는 사용하지 않음
+- 키워드 추출 + 사전심사: Haiku 4.5 (`claude-haiku-4-5-20251001`, ~$0.001)
+- 리포트 생성: Sonnet 4.5 (`claude-sonnet-4-5-20250929`, ~$0.05)
+- 후속 채팅: Sonnet 4.5 (`claude-sonnet-4-5-20250929`, ~$0.02~0.04)
+- Opus는 thinkingModel로 정의만 하고 현재 미사용
 
 ### 근거
 - Sonnet이 구조화된 프롬프트 + 검색 결과 기반 분석에 충분한 품질 제공
 - 1회 분석 비용 ~$0.08로 유지 (Opus 사용 시 ~$0.30+)
+
+---
+
+## ADR-009: LLM 프로바이더를 OpenRouter에서 Anthropic 직접 호출로 전환
+
+### 상태
+승인됨
+
+### 맥락
+OpenRouter를 통해 Anthropic 모델을 호출하고 있었으나, 모델 ID 형식 불일치(`anthropic/claude-haiku-4.5` vs `claude-haiku-4-5-20251001`)로 API 호출이 실패하는 문제가 발생. 또한 OpenRouter 중간 계층의 불필요한 지연과 장애 가능성이 존재했다.
+
+### 결정
+`@openrouter/ai-sdk-provider` → `@ai-sdk/anthropic`으로 교체. 환경 변수를 `OPENROUTER_API_KEY` → `ANTHROPIC_API_KEY`로 변경.
+
+### 근거
+- Anthropic 모델만 사용하므로 직접 호출이 더 단순하고 안정적
+- 중간 프록시 제거로 latency 감소 및 장애 포인트 축소
+- `@ai-sdk/anthropic`이 Vercel AI SDK와 네이티브 호환 — 모델 ID를 공식 Anthropic API 형식 그대로 사용 가능
+- 비용 차이 없음 (OpenRouter의 Anthropic 모델도 원가 동일)
+
+---
+
+## ADR-010: AI SDK v6 UIMessage↔CoreMessage 변환 필수
+
+### 상태
+승인됨
+
+### 맥락
+채팅 API(`/api/chat`)에서 `DefaultChatTransport`가 보낸 메시지를 `streamText`에 그대로 전달하면 AI가 응답하지 않는 문제 발생. AI SDK v6에서 `useChat` + `DefaultChatTransport` 조합은 `UIMessage` 형식(`parts[]` 배열)을 보내지만, `streamText`는 `CoreMessage` 형식(`content` 문자열)을 기대한다.
+
+### 결정
+서버 라우트에서 `convertToModelMessages(messages)`를 호출하여 UIMessage → CoreMessage 변환 후 `streamText`에 전달.
+
+```typescript
+const modelMessages = await convertToModelMessages(messages);
+const result = streamText({ model, system, messages: modelMessages });
+```
+
+### 근거
+- AI SDK v6의 구조적 분리: UI 계층(UIMessage)과 모델 계층(CoreMessage)이 명시적으로 분리됨
+- `DirectChatTransport`는 내부적으로 이 변환을 자동 수행하지만, `DefaultChatTransport` + 서버 라우트 조합에서는 개발자가 직접 변환해야 함
+- `convertToModelMessages`는 AI SDK가 공식 제공하는 유틸리티로, 안정적이고 향후 호환성 보장
 
