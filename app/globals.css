@@ -1,49 +1,60 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
-
-.light {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-background: #ffffff;
+  --color-foreground: #18181b;
+  --color-surface: #f4f4f5;
+  --color-surface-strong: #e4e4e7;
+  --color-outline: #d4d4d8;
+  --color-muted: #71717a;
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: #ffffff;
+  --color-primary-soft: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
 
 @theme {
-  --color-accent: #3b82f6;
-  --color-success: #22c55e;
-  --color-warning: #eab308;
-  --color-caution: #f97316;
-  --color-danger: #ef4444;
-  --color-link: #60a5fa;
+  --color-background: #ffffff;
+  --color-foreground: #18181b;
+  --color-surface: #f4f4f5;
+  --color-surface-strong: #e4e4e7;
+  --color-outline: #d4d4d8;
+  --color-muted: #71717a;
+  --color-primary: #2563eb;
+  --color-primary-foreground: #ffffff;
+  --color-primary-soft: color-mix(in srgb, #2563eb 10%, transparent);
+  --color-accent: #2563eb;
+  --color-success: #16a34a;
+  --color-warning: #ca8a04;
+  --color-caution: #ea580c;
+  --color-danger: #dc2626;
+  --color-link: #1d4ed8;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-ring: color-mix(in srgb, var(--color-accent) 40%, transparent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  /* Opacity variants — color-mix() resolves at runtime for dynamic theming */
+  /* Status variants */
   --color-success-10: color-mix(in srgb, var(--color-success) 10%, transparent);
-  --color-success-20: color-mix(in srgb, var(--color-success) 20%, transparent);
-  --color-success-30: color-mix(in srgb, var(--color-success) 30%, transparent);
+  --color-success-20: color-mix(in srgb, var(--color-success) 15%, transparent);
+  --color-success-30: color-mix(in srgb, var(--color-success) 20%, transparent);
   --color-warning-10: color-mix(in srgb, var(--color-warning) 10%, transparent);
-  --color-warning-30: color-mix(in srgb, var(--color-warning) 30%, transparent);
+  --color-warning-30: color-mix(in srgb, var(--color-warning) 20%, transparent);
   --color-caution-10: color-mix(in srgb, var(--color-caution) 10%, transparent);
-  --color-caution-30: color-mix(in srgb, var(--color-caution) 30%, transparent);
+  --color-caution-30: color-mix(in srgb, var(--color-caution) 20%, transparent);
   --color-danger-5: color-mix(in srgb, var(--color-danger) 5%, transparent);
   --color-danger-10: color-mix(in srgb, var(--color-danger) 10%, transparent);
-  --color-danger-20: color-mix(in srgb, var(--color-danger) 20%, transparent);
-  --color-danger-30: color-mix(in srgb, var(--color-danger) 30%, transparent);
-  --color-link-30: color-mix(in srgb, var(--color-link) 30%, transparent);
+  --color-danger-20: color-mix(in srgb, var(--color-danger) 15%, transparent);
+  --color-danger-30: color-mix(in srgb, var(--color-danger) 20%, transparent);
+  --color-link-30: color-mix(in srgb, var(--color-link) 20%, transparent);
   --color-link-80: color-mix(in srgb, var(--color-link) 80%, transparent);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-geist-sans), sans-serif;
+  min-height: 100vh;
 }
 
 /* Scrollbar */
@@ -56,12 +67,11 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--foreground);
-  opacity: 0.2;
+  background: var(--color-outline);
   border-radius: 3px;
 }
 
 /* Selection */
 ::selection {
-  background: color-mix(in srgb, var(--foreground) 20%, transparent);
+  background: var(--color-primary-soft);
 }

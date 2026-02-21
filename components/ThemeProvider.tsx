@@ -3,16 +3,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { type ColorScheme, DEFAULT_SCHEME, getSchemeById } from "@/lib/themes";
 
-type Theme = "dark" | "light";
-
 const ThemeContext = createContext<{
-  theme: Theme;
-  toggle: () => void;
   colorScheme: ColorScheme;
   setColorScheme: (id: string) => void;
 }>({
-  theme: "dark",
-  toggle: () => {},
   colorScheme: DEFAULT_SCHEME,
   setColorScheme: () => {},
 });
@@ -29,31 +23,14 @@ function applyColorScheme(scheme: ColorScheme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>(DEFAULT_SCHEME);
 
   useEffect(() => {
-    const saved = localStorage.getItem("vibcheck-theme") as Theme | null;
-    if (saved) {
-      setTheme(saved);
-    } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-      setTheme("light");
-    }
-
     const savedScheme = localStorage.getItem("vibcheck-color-scheme");
-    if (savedScheme) {
-      const scheme = getSchemeById(savedScheme);
-      setColorSchemeState(scheme);
-      applyColorScheme(scheme);
-    }
+    const scheme = savedScheme ? getSchemeById(savedScheme) : DEFAULT_SCHEME;
+    setColorSchemeState(scheme);
+    applyColorScheme(scheme);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("light", theme === "light");
-    localStorage.setItem("vibcheck-theme", theme);
-  }, [theme]);
-
-  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
   const setColorScheme = (id: string) => {
     const scheme = getSchemeById(id);
@@ -63,7 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggle, colorScheme, setColorScheme }}>
+    <ThemeContext.Provider value={{ colorScheme, setColorScheme }}>
       {children}
     </ThemeContext.Provider>
   );
