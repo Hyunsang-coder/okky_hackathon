@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 
 const EXAMPLES = [
   // 터무니없는 아이디어
@@ -35,7 +35,11 @@ export function ExampleChips({
 }: {
   onSelect: (idea: string) => void;
 }) {
-  const selected = useMemo(() => pickRandom(EXAMPLES, 4), []);
+  const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelected(pickRandom(EXAMPLES, 4));
+  }, []);
 
   return (
     <div className="flex flex-wrap gap-2">
