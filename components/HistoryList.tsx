@@ -17,7 +17,7 @@ export function HistoryList() {
 
   return (
     <div className="w-full">
-      <h2 className="mb-3 text-sm font-medium text-foreground/40">
+      <h2 className="mb-3 text-sm font-medium text-muted">
         이전 검증 기록
       </h2>
       <div className="space-y-2">
@@ -25,9 +25,9 @@ export function HistoryList() {
           <Link
             key={entry.id}
             href={`/check?history=${entry.id}`}
-            className="flex items-center justify-between rounded-lg border border-foreground/5 p-3 transition-colors hover:bg-foreground/[.03]"
+            className="flex items-center justify-between rounded-lg border border-outline/50 bg-surface/55 p-3 transition-colors hover:bg-surface-strong/70"
           >
-            <span className="mr-3 flex-1 truncate text-sm text-foreground/70">
+            <span className="mr-3 flex-1 truncate text-sm text-foreground/80">
               {entry.idea}
             </span>
             {isVerdict(entry.verdict) && (

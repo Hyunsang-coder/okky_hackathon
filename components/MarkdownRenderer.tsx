@@ -45,15 +45,15 @@ export function MarkdownRenderer({ content }: { content: string }) {
             </div>
           ),
           thead: ({ children }) => (
-            <thead className="border-b border-foreground/10">{children}</thead>
+            <thead className="border-b border-outline/55">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="px-3 py-2 text-left font-medium text-foreground/60">
+            <th className="px-3 py-2 text-left font-medium text-muted">
               {children}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border-t border-foreground/5 px-3 py-2 text-foreground/80">
+            <td className="border-t border-outline/40 px-3 py-2 text-foreground/80">
               {children}
             </td>
           ),
@@ -71,23 +71,23 @@ export function MarkdownRenderer({ content }: { content: string }) {
             const isBlock = className?.includes("language-");
             if (isBlock) {
               return (
-                <code className="block overflow-x-auto rounded-lg bg-foreground/5 p-3 text-sm">
+                <code className="block overflow-x-auto rounded-lg bg-surface-strong/80 p-3 text-sm">
                   {children}
                 </code>
               );
             }
             return (
-              <code className="rounded bg-foreground/10 px-1.5 py-0.5 text-sm">
+              <code className="rounded bg-surface-strong/85 px-1.5 py-0.5 text-sm">
                 {children}
               </code>
             );
           },
           blockquote: ({ children }) => (
-            <blockquote className="mb-3 border-l-2 border-foreground/20 pl-4 text-foreground/60">
+            <blockquote className="mb-3 border-l-2 border-outline/70 pl-4 text-muted">
               {children}
             </blockquote>
           ),
-          hr: () => <hr className="my-6 border-foreground/10" />,
+          hr: () => <hr className="my-6 border-outline/55" />,
         }}
       />
     </div>

@@ -37,13 +37,13 @@ export function AnalysisProgress({ steps }: { steps: ProgressStep[] }) {
     <div className="space-y-3">
       {/* Progress bar */}
       <div className="flex items-center gap-3">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-foreground/10">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-strong/85">
           <div
-            className="h-full rounded-full bg-foreground/60 transition-all duration-500 ease-out"
+            className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
             style={{ width: `${percent}%` }}
           />
         </div>
-        <span className="text-xs tabular-nums text-foreground/40">{percent}%</span>
+        <span className="text-xs tabular-nums text-muted">{percent}%</span>
       </div>
 
       {/* Step list */}
@@ -59,12 +59,12 @@ export function AnalysisProgress({ steps }: { steps: ProgressStep[] }) {
             )}
             {step.status === "active" && (
               <div className="flex h-5 w-5 items-center justify-center">
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground/80" />
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-outline/50 border-t-primary" />
               </div>
             )}
             {step.status === "pending" && (
               <div className="flex h-5 w-5 items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-foreground/20" />
+                <div className="h-2 w-2 rounded-full bg-outline/70" />
               </div>
             )}
             {step.status === "error" && (
@@ -82,16 +82,16 @@ export function AnalysisProgress({ steps }: { steps: ProgressStep[] }) {
                 step.status === "active"
                   ? "text-foreground font-medium"
                   : step.status === "completed"
-                    ? "text-foreground/60"
+                    ? "text-muted"
                     : step.status === "error"
                       ? "text-danger"
-                      : "text-foreground/30"
+                      : "text-outline"
               }`}
             >
               {step.label}
             </p>
             {step.detail && (
-              <p className="mt-0.5 text-xs text-foreground/40">{step.detail}</p>
+              <p className="mt-0.5 text-xs text-muted">{step.detail}</p>
             )}
           </div>
         </div>

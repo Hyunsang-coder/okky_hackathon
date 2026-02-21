@@ -24,10 +24,10 @@ export function ReportView({
         return (
           <div
             key={i}
-            className={`rounded-xl border border-foreground/10 p-5 ${
+            className={`rounded-xl border border-outline/55 p-5 ${
               section.isVerdict
-                ? "bg-foreground/[.03]"
-                : "bg-background"
+                ? "bg-surface-strong/70"
+                : "bg-surface/60"
             }`}
           >
             {section.isVerdict && verdict && (
@@ -43,7 +43,7 @@ export function ReportView({
               }
             />
             {isStreaming && isLast && (
-              <span className="inline-block h-4 w-1 animate-pulse bg-foreground/60" />
+              <span className="inline-block h-4 w-1 animate-pulse bg-primary" />
             )}
           </div>
         );

@@ -34,7 +34,9 @@ export function ChatPanel({
   const { messages, sendMessage, status } = useChat({ transport });
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,7 +52,7 @@ export function ChatPanel({
   };
 
   return (
-    <div className="mt-6 rounded-xl border border-foreground/10 p-5">
+    <div className="mt-6 rounded-xl border border-outline/55 bg-surface/55 p-5">
       <h3 className="mb-4 text-lg font-semibold">궁금한 점을 물어보세요</h3>
 
       {messages.length === 0 && (
@@ -59,7 +61,7 @@ export function ChatPanel({
             <button
               key={q}
               onClick={() => handleSuggestion(q)}
-              className="rounded-full border border-foreground/10 px-3 py-1.5 text-sm text-foreground/60 transition-colors hover:border-foreground/30 hover:text-foreground"
+              className="rounded-full border border-outline/60 bg-surface/60 px-3 py-1.5 text-sm text-muted transition-colors hover:border-primary hover:bg-primary-soft hover:text-foreground"
             >
               {q}
             </button>
@@ -74,8 +76,8 @@ export function ChatPanel({
               key={message.id}
               className={`rounded-lg p-3 ${
                 message.role === "user"
-                  ? "ml-auto max-w-[80%] bg-foreground text-background"
-                  : "bg-foreground/[.05]"
+                  ? "ml-auto max-w-[80%] bg-primary text-white"
+                  : "bg-surface-strong/70"
               }`}
             >
               {message.role === "user" ? (
@@ -98,8 +100,8 @@ export function ChatPanel({
           {status === "streaming" &&
             messages.length > 0 &&
             messages[messages.length - 1].role !== "assistant" && (
-              <div className="rounded-lg bg-foreground/[.05] p-3">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground/60" />
+              <div className="rounded-lg bg-surface-strong/70 p-3">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-outline/50 border-t-primary" />
               </div>
             )}
           <div ref={messagesEndRef} />
@@ -111,12 +113,12 @@ export function ChatPanel({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="추가 질문을 입력하세요..."
-          className="flex-1 rounded-lg border border-foreground/10 bg-background px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-foreground/30 focus:border-foreground/30"
+          className="flex-1 rounded-lg border border-outline/60 bg-surface px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-muted focus:border-primary"
         />
         <button
           type="submit"
           disabled={!input.trim() || status === "streaming"}
-          className="rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           전송
         </button>
