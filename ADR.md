@@ -217,3 +217,77 @@ const result = streamText({ model, system, messages: modelMessages });
 - `DirectChatTransport`는 내부적으로 이 변환을 자동 수행하지만, `DefaultChatTransport` + 서버 라우트 조합에서는 개발자가 직접 변환해야 함
 - `convertToModelMessages`는 AI SDK가 공식 제공하는 유틸리티로, 안정적이고 향후 호환성 보장
 
+---
+
+## ADR-011: SSE 이벤트 스키마를 공유 타입으로 분리
+
+### 상태
+승인됨
+
+### 맥락
+서버(API route)와 클라이언트(hooks)가 SSE 이벤트를 각각 문자열 기반으로 인코딩/파싱하고 있었다. 서버는 인라인 `sseEvent(type, data)` 함수로 JSON을 생성하고, 클라이언트는 `JSON.parse` 후 `event.type`을 문자열로 비교했다. 이벤트 포맷이 한쪽에서 변경되면 다른 쪽이 암묵적으로 깨지는 커플링 문제가 있었다.
+
+### 결정
+`lib/sse.ts`에 SSE 이벤트의 공유 스키마를 정의한다.
+
+- **타입**: `SSEEvent` discriminated union으로 모든 이벤트 타입(`progress`, `text`, `context`, `report-meta`, `error`)을 정의
+- **서버용 헬퍼**: `encodeSSE()`, `encodeProgress()`, `encodeDone()` — 타입 안전한 JSON 인코딩
+- **클라이언트용 헬퍼**: `parseSSELine()` — `SSEMessage` 타입을 반환하는 파서
+- **공유 하위 타입**: `ProgressStepId`, `ProgressStatus`, `SSEProgressData`로 progress 이벤트 구조화
+- `AnalysisProgress`의 `ProgressStep.id`를 `ProgressStepId`로 타입 연결
+
+### 근거
+- 서버와 클라이언트가 동일한 타입을 참조하므로, 이벤트 포맷 변경 시 TypeScript 컴파일 에러로 즉시 감지
+- 인코딩/파싱 로직이 한 파일에 집중되어 프로토콜 변경의 영향 범위가 명확
+- UI와 백엔드의 병렬 작업 시 SSE 프로토콜 동기화 누락 방지
+
+---
+
+## ADR-012: 리포트 구조 파싱을 regex 대신 구조화된 데이터로 전환
+
+### 상태
+승인됨
+
+### 맥락
+LLM이 생성하는 마크다운 리포트에서 판정(verdict), 확신도(confidence), 섹션 구분을 추출하는 로직이 3곳에 분산되어 있었다.
+
+| 위치 | 역할 | 방식 |
+|------|------|------|
+| `ReportView.splitSections()` | `## ` 기준 섹션 분리 + `heading.includes("판정:")` | 문자열 매칭 |
+| `VerdictBadge.getVerdictFromReport()` | `## 판정:\s*(.+)` regex로 판정 추출 | regex |
+| `history.extractVerdict()` | 동일 regex 중복 | regex |
+
+프롬프트의 리포트 형식이 변경되면 3곳을 동시에 수정해야 하며, 누락 시 런타임에서 조용히 실패했다.
+
+### 결정
+`lib/report.ts`에 리포트 구조의 공유 스키마와 단일 파서를 정의하고, 서버에서 구조화된 데이터를 SSE로 전송한다.
+
+**공유 타입:**
+```typescript
+type Verdict = "바이브코딩으로 가능" | "조건부 가능" | "개발자 도움 필요" | "현재 기술로 어려움";
+
+interface ReportSection { heading: string; content: string; isVerdict: boolean; }
+interface ReportMeta { verdict: Verdict | null; confidence: number | null; sections: ReportSection[]; }
+```
+
+**단일 파서:** `parseReport(markdown): ReportMeta` — 서버와 클라이언트 양쪽에서 사용 가능
+
+**SSE 프로토콜 확장:** 스트리밍 완료 후 `report-meta` 이벤트로 구조화된 `ReportMeta`를 전송
+
+**클라이언트 렌더링:**
+- 스트리밍 중: `parseReport(partialText)`로 점진적 섹션 렌더링
+- 스트리밍 완료: 서버 제공 `ReportMeta`를 권위적 데이터로 사용
+
+**제거된 것:**
+- `ReportView.splitSections()` → `parseReport()` 대체
+- `VerdictBadge.getVerdictFromReport()` → `meta.verdict` 프로퍼티
+- `history.extractVerdict()` → `reportMeta.verdict` 사용
+- `heading.includes("판정:")` 문자열 매칭 → `section.isVerdict` boolean
+
+### 근거
+- 파싱 로직이 단일 함수에 집중되어 프롬프트 형식 변경 시 수정 지점이 1곳
+- `Verdict` union 타입으로 판정 값이 컴파일 타임에 검증됨 (기존: 임의 문자열)
+- `VerdictBadge`의 `VERDICT_COLORS`가 `Record<Verdict, ...>`로 타입 안전해짐 — 판정 등급 추가/변경 시 컴파일 에러
+- 히스토리의 기존 문자열 데이터와 호환을 위해 `isVerdict()` 타입 가드 제공
+- 서버에서 구조화 데이터를 전송하므로, 클라이언트 UI 코드에 리포트 포맷 지식이 불필요
+
