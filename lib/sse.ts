@@ -1,6 +1,8 @@
 // ─── SSE 공유 스키마 ───
 // 서버(API route)와 클라이언트(hooks)가 동일한 타입을 참조합니다.
 
+import type { ReportMeta } from "./report";
+
 // Progress 이벤트의 step ID
 export type ProgressStepId =
   | "keywords"
@@ -23,6 +25,7 @@ export type SSEEvent =
   | { type: "progress"; data: SSEProgressData }
   | { type: "text"; data: string }
   | { type: "context"; data: string }
+  | { type: "report-meta"; data: ReportMeta }
   | { type: "error"; data: string };
 
 // 파싱 결과 (done 시그널 포함)

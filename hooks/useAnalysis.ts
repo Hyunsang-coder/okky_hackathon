@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { ProgressStep } from "@/components/AnalysisProgress";
+import type { ReportMeta } from "@/lib/report";
 import { parseSSELine } from "@/lib/sse";
 
 export type AnalysisState =
@@ -16,6 +17,7 @@ interface UseAnalysisReturn {
   state: AnalysisState;
   steps: ProgressStep[];
   report: string;
+  reportMeta: ReportMeta | null;
   searchContext: string;
   error: string | null;
   startAnalysis: (idea: string) => void;
@@ -45,6 +47,7 @@ export function useAnalysis(): UseAnalysisReturn {
   const [state, setState] = useState<AnalysisState>("idle");
   const [steps, setSteps] = useState<ProgressStep[]>(INITIAL_STEPS);
   const [report, setReport] = useState("");
+  const [reportMeta, setReportMeta] = useState<ReportMeta | null>(null);
   const [searchContext, setSearchContext] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -56,6 +59,7 @@ export function useAnalysis(): UseAnalysisReturn {
       )
     );
     setReport("");
+    setReportMeta(null);
     setSearchContext("");
     setError(null);
 
@@ -117,6 +121,8 @@ export function useAnalysis(): UseAnalysisReturn {
             }
           } else if (message.type === "text") {
             setReport((prev) => prev + message.data);
+          } else if (message.type === "report-meta") {
+            setReportMeta(message.data);
           } else if (message.type === "context") {
             setSearchContext(message.data);
           } else if (message.type === "error") {
@@ -131,5 +137,5 @@ export function useAnalysis(): UseAnalysisReturn {
     }
   }, []);
 
-  return { state, steps, report, searchContext, error, startAnalysis };
+  return { state, steps, report, reportMeta, searchContext, error, startAnalysis };
 }

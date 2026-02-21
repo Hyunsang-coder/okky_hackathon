@@ -39,8 +39,3 @@ export function addHistory(entry: Omit<HistoryEntry, "id" | "date">): void {
 export function getHistoryEntry(id: string): HistoryEntry | undefined {
   return getEntries().find((e) => e.id === id);
 }
-
-export function extractVerdict(report: string): string {
-  const match = report.match(/## 판정:\s*(.+)/);
-  return match ? match[1].trim() : "분석 중";
-}

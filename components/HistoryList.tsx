@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getHistory, type HistoryEntry } from "@/lib/history";
+import { isVerdict } from "@/lib/report";
 import { VerdictBadge } from "./VerdictBadge";
 
 export function HistoryList() {
@@ -29,7 +30,9 @@ export function HistoryList() {
             <span className="mr-3 flex-1 truncate text-sm text-foreground/70">
               {entry.idea}
             </span>
-            <VerdictBadge verdict={entry.verdict} />
+            {isVerdict(entry.verdict) && (
+              <VerdictBadge verdict={entry.verdict} />
+            )}
           </Link>
         ))}
       </div>

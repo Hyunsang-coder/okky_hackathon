@@ -1,6 +1,8 @@
 "use client";
 
-const VERDICT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+import type { Verdict } from "@/lib/report";
+
+const VERDICT_COLORS: Record<Verdict, { bg: string; text: string; border: string }> = {
   "바이브코딩으로 가능": {
     bg: "bg-green-500/10",
     text: "text-green-500",
@@ -23,12 +25,8 @@ const VERDICT_COLORS: Record<string, { bg: string; text: string; border: string 
   },
 };
 
-export function VerdictBadge({ verdict }: { verdict: string }) {
-  const colors = VERDICT_COLORS[verdict] || {
-    bg: "bg-foreground/5",
-    text: "text-foreground/60",
-    border: "border-foreground/10",
-  };
+export function VerdictBadge({ verdict }: { verdict: Verdict }) {
+  const colors = VERDICT_COLORS[verdict];
 
   return (
     <span
@@ -37,9 +35,4 @@ export function VerdictBadge({ verdict }: { verdict: string }) {
       {verdict}
     </span>
   );
-}
-
-export function getVerdictFromReport(report: string): string {
-  const match = report.match(/## 판정:\s*(.+)/);
-  return match ? match[1].trim() : "";
 }

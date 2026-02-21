@@ -1,65 +1,36 @@
 "use client";
 
-import { VerdictBadge, getVerdictFromReport } from "./VerdictBadge";
+import { parseReport, type ReportMeta } from "@/lib/report";
+import { VerdictBadge } from "./VerdictBadge";
 import { MarkdownRenderer } from "./MarkdownRenderer";
-
-function splitSections(markdown: string): { heading: string; content: string }[] {
-  const sections: { heading: string; content: string }[] = [];
-  const lines = markdown.split("\n");
-  let currentHeading = "";
-  let currentContent: string[] = [];
-
-  for (const line of lines) {
-    if (line.startsWith("## ")) {
-      if (currentHeading || currentContent.length > 0) {
-        sections.push({
-          heading: currentHeading,
-          content: currentContent.join("\n").trim(),
-        });
-      }
-      currentHeading = line;
-      currentContent = [];
-    } else {
-      currentContent.push(line);
-    }
-  }
-
-  if (currentHeading || currentContent.length > 0) {
-    sections.push({
-      heading: currentHeading,
-      content: currentContent.join("\n").trim(),
-    });
-  }
-
-  return sections;
-}
 
 export function ReportView({
   report,
+  meta,
   isStreaming,
 }: {
   report: string;
+  meta: ReportMeta | null;
   isStreaming: boolean;
 }) {
-  const verdict = getVerdictFromReport(report);
-  const sections = splitSections(report);
+  // 스트리밍 중: 누적된 텍스트에서 파싱 / 완료 후: 서버 제공 구조화 데이터 사용
+  const { verdict, sections } = meta ?? parseReport(report);
 
   return (
     <div className="space-y-4">
       {sections.map((section, i) => {
-        const isVerdictSection = section.heading.includes("판정:");
         const isLast = i === sections.length - 1;
 
         return (
           <div
             key={i}
             className={`rounded-xl border border-foreground/10 p-5 ${
-              isVerdictSection
+              section.isVerdict
                 ? "bg-foreground/[.03]"
                 : "bg-background"
             }`}
           >
-            {isVerdictSection && verdict && (
+            {section.isVerdict && verdict && (
               <div className="mb-3">
                 <VerdictBadge verdict={verdict} />
               </div>

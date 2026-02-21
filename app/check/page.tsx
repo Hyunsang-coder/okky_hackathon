@@ -7,7 +7,8 @@ import { AnalysisProgress } from "@/components/AnalysisProgress";
 import { ReportView } from "@/components/ReportView";
 import { ChatPanel } from "@/components/ChatPanel";
 import { useAnalysis } from "@/hooks/useAnalysis";
-import { addHistory, getHistoryEntry, extractVerdict } from "@/lib/history";
+import { addHistory, getHistoryEntry } from "@/lib/history";
+import { parseReport, type ReportMeta } from "@/lib/report";
 
 function CheckContent() {
   const searchParams = useSearchParams();
@@ -16,11 +17,12 @@ function CheckContent() {
   const startedRef = useRef(false);
   const savedRef = useRef(false);
 
-  const { state, steps, report, searchContext, error, startAnalysis } =
+  const { state, steps, report, reportMeta, searchContext, error, startAnalysis } =
     useAnalysis();
 
   // Load from history
   const [historyReport, setHistoryReport] = useState("");
+  const [historyMeta, setHistoryMeta] = useState<ReportMeta | null>(null);
   const [historyContext, setHistoryContext] = useState("");
   const [historyIdea, setHistoryIdea] = useState("");
 
@@ -29,6 +31,7 @@ function CheckContent() {
       const entry = getHistoryEntry(historyId);
       if (entry) {
         setHistoryReport(entry.report);
+        setHistoryMeta(parseReport(entry.report));
         setHistoryContext(entry.searchContext || "");
         setHistoryIdea(entry.idea);
       }
@@ -45,20 +48,20 @@ function CheckContent() {
 
   // Save to history on complete
   useEffect(() => {
-    if (state === "complete" && report && !savedRef.current) {
+    if (state === "complete" && report && reportMeta && !savedRef.current) {
       savedRef.current = true;
-      const verdict = extractVerdict(report);
       addHistory({
         idea,
-        verdict,
+        verdict: reportMeta.verdict ?? "분석 완료",
         report,
         searchContext,
       });
     }
-  }, [state, report, idea, searchContext]);
+  }, [state, report, reportMeta, idea, searchContext]);
 
   const displayIdea = historyId ? historyIdea : idea;
   const displayReport = historyId ? historyReport : report;
+  const displayMeta = historyId ? historyMeta : reportMeta;
   const displayContext = historyId ? historyContext : searchContext;
   const isFromHistory = !!historyId;
   const isComplete = isFromHistory || state === "complete";
@@ -95,7 +98,7 @@ function CheckContent() {
 
         {/* Report */}
         {displayReport && (
-          <ReportView report={displayReport} isStreaming={isStreaming} />
+          <ReportView report={displayReport} meta={displayMeta} isStreaming={isStreaming} />
         )}
 
         {/* Action buttons */}

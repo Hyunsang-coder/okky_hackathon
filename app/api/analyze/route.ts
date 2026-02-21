@@ -10,6 +10,7 @@ import {
   buildAnalysisUserPrompt,
 } from "@/lib/prompts";
 import { encodeSSE, encodeProgress, encodeDone } from "@/lib/sse";
+import { parseReport } from "@/lib/report";
 
 export const maxDuration = 120;
 
@@ -61,11 +62,16 @@ export async function POST(req: Request) {
             prompt: `사용자 아이디어: ${idea}\n\n사전 심사 결과:\n- 분류: IMPOSSIBLE\n- 이유: ${extraction.reason}\n- 대안 제안: ${extraction.alternative || "없음"}`,
           });
 
+          let fullReport = "";
           for await (const chunk of result.textStream) {
+            fullReport += chunk;
             send(encodeSSE({ type: "text", data: chunk }));
           }
 
           send(encodeProgress("report", "completed"));
+          send(
+            encodeSSE({ type: "report-meta", data: parseReport(fullReport) }),
+          );
           send(encodeSSE({ type: "context", data: "" }));
           send(encodeDone());
           controller.close();
@@ -136,11 +142,16 @@ export async function POST(req: Request) {
           prompt: userPrompt,
         });
 
+        let fullReport = "";
         for await (const chunk of result.textStream) {
+          fullReport += chunk;
           send(encodeSSE({ type: "text", data: chunk }));
         }
 
         send(encodeProgress("report", "completed"));
+        send(
+          encodeSSE({ type: "report-meta", data: parseReport(fullReport) }),
+        );
 
         // Send search context for chat
         send(encodeSSE({ type: "context", data: ranked.contextXml }));
