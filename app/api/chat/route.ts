@@ -1,17 +1,16 @@
 import { streamText } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { thinkingModel, defaultModel } from "@/lib/models";
 
 export const maxDuration = 60;
-
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
+  // 첫 메시지(리포트 생성)는 opus로 깊은 분석, 후속 채팅은 sonnet
+  const isFirstAnalysis = messages.filter((m: { role: string }) => m.role === "user").length === 1;
+
   const result = streamText({
-    model: openrouter("anthropic/claude-sonnet-4"),
+    model: isFirstAnalysis ? thinkingModel : defaultModel,
     system: `당신은 VibCheck의 아이디어 검증 전문가입니다.
 비개발자 출신 바이브 코더가 아이디어를 가져오면, 그 아이디어의 구현 가능성을 분석해주세요.
 
