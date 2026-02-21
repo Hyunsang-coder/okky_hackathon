@@ -16,6 +16,15 @@ import {
   dummyReportMarkdown,
   dummyReportMeta,
 } from "@/lib/fixtures";
+import {
+  keywordCache,
+  githubCache,
+  tavilyCache,
+  keywordCacheKey,
+  githubCacheKey,
+  tavilyCacheKey,
+} from "@/lib/cache";
+import type { KeywordExtraction } from "@/lib/pipeline/types";
 
 export const maxDuration = 120;
 
@@ -37,25 +46,39 @@ export async function POST(req: Request) {
       try {
         // Phase 0+1: Keyword extraction
         send(encodeProgress("keywords", "started", "아이디어 분석 중..."));
-        let extraction;
-        try {
-          extraction = await extractKeywords(idea);
+        let extraction: KeywordExtraction;
+        const kwKey = keywordCacheKey(idea);
+        const cachedKw = keywordCache.get(kwKey) as KeywordExtraction | undefined;
+        if (cachedKw) {
+          extraction = cachedKw;
           send(
             encodeProgress(
               "keywords",
               "completed",
-              `"${extraction.classification}" 분류 완료`,
+              `"${extraction.classification}" 분류 완료 (캐시)`,
             )
           );
-        } catch {
-          extraction = dummyExtraction(idea);
-          send(
-            encodeProgress(
-              "keywords",
-              "error",
-              "AI 분석 실패 — 기본 분류로 진행합니다",
-            )
-          );
+        } else {
+          try {
+            extraction = await extractKeywords(idea);
+            keywordCache.set(kwKey, extraction);
+            send(
+              encodeProgress(
+                "keywords",
+                "completed",
+                `"${extraction.classification}" 분류 완료`,
+              )
+            );
+          } catch {
+            extraction = dummyExtraction(idea);
+            send(
+              encodeProgress(
+                "keywords",
+                "error",
+                "AI 분석 실패 — 기본 분류로 진행합니다",
+              )
+            );
+          }
         }
 
         // IMPOSSIBLE case: skip search, generate short report
@@ -104,17 +127,33 @@ export async function POST(req: Request) {
         }
 
         // SEARCHABLE / AMBIGUOUS: proceed with search
-        // GitHub + Tavily in parallel
-        send(encodeProgress("github", "started", "유사 프로젝트 검색 중..."));
-        send(encodeProgress("tavily", "started", "시장 정보 수집 중..."));
+        // GitHub + Tavily in parallel (with cache)
+        const ghKey = githubCacheKey(extraction.github_queries, extraction.topics, extraction.github_queries_ko);
+        const tvKey = tavilyCacheKey(extraction.tavily_queries);
+
+        const cachedGh = githubCache.get(ghKey) as { repos: import("@/lib/pipeline/types").GitHubRepo[]; signal: import("@/lib/pipeline/types").EcosystemSignalType } | undefined;
+        const cachedTv = tavilyCache.get(tvKey) as import("@/lib/pipeline/types").TavilyResult[] | undefined;
+
+        send(encodeProgress("github", "started", cachedGh ? "캐시에서 로드 중..." : "유사 프로젝트 검색 중..."));
+        send(encodeProgress("tavily", "started", cachedTv ? "캐시에서 로드 중..." : "시장 정보 수집 중..."));
 
         const [githubResult, tavilyResult] = await Promise.allSettled([
-          searchGitHub(extraction.github_queries, extraction.topics, extraction.github_queries_ko),
-          searchTavily(extraction.tavily_queries),
+          cachedGh
+            ? Promise.resolve(cachedGh)
+            : searchGitHub(extraction.github_queries, extraction.topics, extraction.github_queries_ko).then((r) => {
+                githubCache.set(ghKey, r);
+                return r;
+              }),
+          cachedTv
+            ? Promise.resolve(cachedTv)
+            : searchTavily(extraction.tavily_queries).then((r) => {
+                tavilyCache.set(tvKey, r);
+                return r;
+              }),
         ]);
 
-        const githubFailed = githubResult.status === "rejected";
-        const tavilyFailed = tavilyResult.status === "rejected";
+        const githubFailed = !cachedGh && githubResult.status === "rejected";
+        const tavilyFailed = !cachedTv && tavilyResult.status === "rejected";
 
         const github =
           githubResult.status === "fulfilled"
@@ -128,13 +167,20 @@ export async function POST(req: Request) {
           github.signal = "UNKNOWN";
         }
 
+        const ghDetail = cachedGh
+          ? `${github.repos.length}개 프로젝트 발견 (${github.signal}) (캐시)`
+          : `${github.repos.length}개 프로젝트 발견 (${github.signal})`;
+        const tvDetail = cachedTv
+          ? `${tavily.length}개 자료 발견 (캐시)`
+          : `${tavily.length}개 자료 발견`;
+
         send(
           encodeProgress(
             "github",
             githubFailed ? "error" : "completed",
             githubFailed
               ? "GitHub 검색 실패 — 제한된 정보로 분석합니다"
-              : `${github.repos.length}개 프로젝트 발견 (${github.signal})`,
+              : ghDetail,
           )
         );
         send(
@@ -143,7 +189,7 @@ export async function POST(req: Request) {
             tavilyFailed ? "error" : "completed",
             tavilyFailed
               ? "웹 검색 실패 — 제한된 정보로 분석합니다"
-              : `${tavily.length}개 자료 발견`,
+              : tvDetail,
           )
         );
 

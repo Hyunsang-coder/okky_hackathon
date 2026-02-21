@@ -39,3 +39,19 @@ export function addHistory(entry: Omit<HistoryEntry, "id" | "date">): void {
 export function getHistoryEntry(id: string): HistoryEntry | undefined {
   return getEntries().find((e) => e.id === id);
 }
+
+export function findMatchingHistory(idea: string): HistoryEntry | undefined {
+  const normalized = idea
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .replace(/[.!?。！？]+$/, "");
+  return getEntries().find((e) => {
+    const entryNorm = e.idea
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase()
+      .replace(/[.!?。！？]+$/, "");
+    return entryNorm === normalized;
+  });
+}

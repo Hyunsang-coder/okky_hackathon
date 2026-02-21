@@ -62,7 +62,7 @@ export async function POST() {
       send(encodeProgress("report", "started", "리포트 생성 중..."));
       await delay(100);
 
-      const chunks = DEMO_REPORT.match(/.{1,120}/gs) ?? [];
+      const chunks = DEMO_REPORT.match(/.{1,120}/g) ?? [];
       for (const chunk of chunks) {
         send(encodeSSE({ type: "text", data: chunk }));
         await delay(15);
