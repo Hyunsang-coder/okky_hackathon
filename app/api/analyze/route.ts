@@ -11,6 +11,11 @@ import {
 } from "@/lib/prompts";
 import { encodeSSE, encodeProgress, encodeDone } from "@/lib/sse";
 import { parseReport } from "@/lib/report";
+import {
+  dummyExtraction,
+  dummyReportMarkdown,
+  dummyReportMeta,
+} from "@/lib/fixtures";
 
 export const maxDuration = 120;
 
@@ -32,14 +37,26 @@ export async function POST(req: Request) {
       try {
         // Phase 0+1: Keyword extraction
         send(encodeProgress("keywords", "started", "아이디어 분석 중..."));
-        const extraction = await extractKeywords(idea);
-        send(
-          encodeProgress(
-            "keywords",
-            "completed",
-            `"${extraction.classification}" 분류 완료`,
-          )
-        );
+        let extraction;
+        try {
+          extraction = await extractKeywords(idea);
+          send(
+            encodeProgress(
+              "keywords",
+              "completed",
+              `"${extraction.classification}" 분류 완료`,
+            )
+          );
+        } catch {
+          extraction = dummyExtraction(idea);
+          send(
+            encodeProgress(
+              "keywords",
+              "error",
+              "AI 분석 실패 — 기본 분류로 진행합니다",
+            )
+          );
+        }
 
         // IMPOSSIBLE case: skip search, generate short report
         if (extraction.classification === "IMPOSSIBLE") {
@@ -56,22 +73,30 @@ export async function POST(req: Request) {
             )
           );
 
-          const result = streamText({
-            model: defaultModel,
-            system: IMPOSSIBLE_REPORT_PROMPT,
-            prompt: `사용자 아이디어: ${idea}\n\n사전 심사 결과:\n- 분류: IMPOSSIBLE\n- 이유: ${extraction.reason}\n- 대안 제안: ${extraction.alternative || "없음"}`,
-          });
+          try {
+            const result = streamText({
+              model: defaultModel,
+              system: IMPOSSIBLE_REPORT_PROMPT,
+              prompt: `사용자 아이디어: ${idea}\n\n사전 심사 결과:\n- 분류: IMPOSSIBLE\n- 이유: ${extraction.reason}\n- 대안 제안: ${extraction.alternative || "없음"}`,
+            });
 
-          let fullReport = "";
-          for await (const chunk of result.textStream) {
-            fullReport += chunk;
-            send(encodeSSE({ type: "text", data: chunk }));
+            let fullReport = "";
+            for await (const chunk of result.textStream) {
+              fullReport += chunk;
+              send(encodeSSE({ type: "text", data: chunk }));
+            }
+
+            send(encodeProgress("report", "completed"));
+            send(
+              encodeSSE({ type: "report-meta", data: parseReport(fullReport) }),
+            );
+          } catch {
+            const fallback = dummyReportMarkdown(idea);
+            send(encodeSSE({ type: "text", data: fallback }));
+            send(encodeProgress("report", "error", "리포트 생성 실패 — 기본 리포트를 표시합니다"));
+            send(encodeSSE({ type: "report-meta", data: dummyReportMeta(idea) }));
           }
 
-          send(encodeProgress("report", "completed"));
-          send(
-            encodeSSE({ type: "report-meta", data: parseReport(fullReport) }),
-          );
           send(encodeSSE({ type: "context", data: "" }));
           send(encodeDone());
           controller.close();
@@ -136,22 +161,29 @@ export async function POST(req: Request) {
           ranked.contextXml
         );
 
-        const result = streamText({
-          model: defaultModel,
-          system: REPORT_SYSTEM_PROMPT,
-          prompt: userPrompt,
-        });
+        try {
+          const result = streamText({
+            model: defaultModel,
+            system: REPORT_SYSTEM_PROMPT,
+            prompt: userPrompt,
+          });
 
-        let fullReport = "";
-        for await (const chunk of result.textStream) {
-          fullReport += chunk;
-          send(encodeSSE({ type: "text", data: chunk }));
+          let fullReport = "";
+          for await (const chunk of result.textStream) {
+            fullReport += chunk;
+            send(encodeSSE({ type: "text", data: chunk }));
+          }
+
+          send(encodeProgress("report", "completed"));
+          send(
+            encodeSSE({ type: "report-meta", data: parseReport(fullReport) }),
+          );
+        } catch {
+          const fallback = dummyReportMarkdown(idea);
+          send(encodeSSE({ type: "text", data: fallback }));
+          send(encodeProgress("report", "error", "리포트 생성 실패 — 기본 리포트를 표시합니다"));
+          send(encodeSSE({ type: "report-meta", data: dummyReportMeta(idea) }));
         }
-
-        send(encodeProgress("report", "completed"));
-        send(
-          encodeSSE({ type: "report-meta", data: parseReport(fullReport) }),
-        );
 
         // Send search context for chat
         send(encodeSSE({ type: "context", data: ranked.contextXml }));
