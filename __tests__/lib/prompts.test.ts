@@ -136,6 +136,16 @@ describe("buildAnalysisUserPrompt", () => {
   });
 });
 
+describe("REPORT_SYSTEM_PROMPT - confidence 가이드라인", () => {
+  it("확신도 산출 기준표가 포함되어 있다", async () => {
+    const { REPORT_SYSTEM_PROMPT } = await import("@/lib/prompts");
+    expect(REPORT_SYSTEM_PROMPT).toContain("확신도(confidence) 산출 기준");
+    expect(REPORT_SYSTEM_PROMPT).toContain("0.85~0.95");
+    expect(REPORT_SYSTEM_PROMPT).toContain("0.30 이하");
+    expect(REPORT_SYSTEM_PROMPT).toContain("UNKNOWN");
+  });
+});
+
 describe("buildChatSystemPrompt", () => {
   it("리포트와 컨텍스트를 플레이스홀더에 삽입한다", () => {
     const result = buildChatSystemPrompt("리포트 내용", "검색 컨텍스트");

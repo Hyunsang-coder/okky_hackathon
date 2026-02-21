@@ -27,9 +27,9 @@ function scoreRepo(
           commitFreq: 0.15,
         }
       : {
-          stars: 0.25,
+          stars: 0.15,
           recency: 0.2,
-          descMatch: 0.2,
+          descMatch: 0.3,
           readme: 0.15,
           topics: 0.1,
           license: 0.1,
@@ -50,11 +50,13 @@ function scoreRepo(
   ).length;
   const descMatchScore = Math.min(1, matchCount / Math.max(1, userKeywords.length));
 
-  // README quality
-  const readmeScore = repo.readme_excerpt && repo.readme_excerpt.length > 500 ? 1 : 0.3;
+  // README quality (continuous: length / 1000, capped at 1.0)
+  const readmeLen = repo.readme_excerpt ? repo.readme_excerpt.length : 0;
+  const readmeScore = readmeLen > 0 ? Math.min(1, readmeLen / 1000) : 0.1;
 
-  // Topics
-  const topicScore = repo.topics && repo.topics.length > 0 ? 1 : 0;
+  // Topics (proportional: count / 3, capped at 1.0)
+  const topicCount = repo.topics ? repo.topics.length : 0;
+  const topicScore = Math.min(1, topicCount / 3);
 
   // License
   const licenseScore = repo.license ? 1 : 0;

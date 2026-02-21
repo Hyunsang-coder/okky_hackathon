@@ -213,6 +213,93 @@ describe("rankResults", () => {
     expect(result.contextXml).toBeTruthy();
   });
 
+  it("ESTABLISHED에서 descMatch 가중치(30%)가 stars(15%)보다 높다", () => {
+    const highStars = makeRepo({
+      full_name: "popular/repo",
+      description: "unrelated generic utility",
+      stargazers_count: 50000,
+    });
+    const goodMatch = makeRepo({
+      full_name: "relevant/repo",
+      description: "image analysis tool for photo tagging",
+      stargazers_count: 50,
+    });
+
+    const result = rankResults(
+      [highStars, goodMatch],
+      [],
+      "ESTABLISHED",
+      ["image", "analysis", "photo", "tagging"]
+    );
+    const relevantScore = result.github.find(
+      (r) => r.full_name === "relevant/repo"
+    )!.score!;
+    const popularScore = result.github.find(
+      (r) => r.full_name === "popular/repo"
+    )!.score!;
+    expect(relevantScore).toBeGreaterThan(popularScore);
+  });
+
+  it("README 길이에 따라 연속적으로 점수가 변한다", () => {
+    const shortReadme = makeRepo({
+      full_name: "short/readme",
+      readme_excerpt: "A".repeat(200),
+      stargazers_count: 100,
+    });
+    const medReadme = makeRepo({
+      full_name: "med/readme",
+      readme_excerpt: "A".repeat(600),
+      stargazers_count: 100,
+    });
+    const longReadme = makeRepo({
+      full_name: "long/readme",
+      readme_excerpt: "A".repeat(1000),
+      stargazers_count: 100,
+    });
+
+    const result = rankResults(
+      [shortReadme, medReadme, longReadme],
+      [],
+      "ESTABLISHED",
+      []
+    );
+    const shortScore = result.github.find((r) => r.full_name === "short/readme")!.score!;
+    const medScore = result.github.find((r) => r.full_name === "med/readme")!.score!;
+    const longScore = result.github.find((r) => r.full_name === "long/readme")!.score!;
+    expect(longScore).toBeGreaterThan(medScore);
+    expect(medScore).toBeGreaterThan(shortScore);
+  });
+
+  it("topics 개수에 따라 비례적으로 점수가 변한다", () => {
+    const noTopics = makeRepo({
+      full_name: "no/topics",
+      topics: [],
+      stargazers_count: 100,
+    });
+    const someTopics = makeRepo({
+      full_name: "some/topics",
+      topics: ["react"],
+      stargazers_count: 100,
+    });
+    const manyTopics = makeRepo({
+      full_name: "many/topics",
+      topics: ["react", "nextjs", "typescript"],
+      stargazers_count: 100,
+    });
+
+    const result = rankResults(
+      [noTopics, someTopics, manyTopics],
+      [],
+      "ESTABLISHED",
+      []
+    );
+    const noScore = result.github.find((r) => r.full_name === "no/topics")!.score!;
+    const someScore = result.github.find((r) => r.full_name === "some/topics")!.score!;
+    const manyScore = result.github.find((r) => r.full_name === "many/topics")!.score!;
+    expect(manyScore).toBeGreaterThan(someScore);
+    expect(someScore).toBeGreaterThan(noScore);
+  });
+
   it("UNKNOWN 시그널 메시지에 검색 장애 안내가 포함된다", () => {
     const result = rankResults([], [], "UNKNOWN", []);
     expect(result.contextXml).toContain('ecosystem_signal type="UNKNOWN"');

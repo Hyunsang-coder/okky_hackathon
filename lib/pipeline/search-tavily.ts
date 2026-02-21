@@ -84,6 +84,8 @@ export async function searchTavily(queries: {
           "g2.com",
           "alternativeto.net",
           "techcrunch.com",
+          "disquiet.io",
+          "wanted.co.kr",
         ],
       },
     },

@@ -70,6 +70,7 @@ describe("searchTavily", () => {
     );
     expect(competitors.search_depth).toBe("advanced");
     expect(competitors.include_domains).toContain("producthunt.com");
+    expect(competitors.include_domains).toContain("disquiet.io");
     expect(competitors.max_results).toBe(8);
 
     // trends: news topic, time_range

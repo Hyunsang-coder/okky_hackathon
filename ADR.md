@@ -455,3 +455,85 @@ GitHub/Tavily 검색이 네트워크 장애 등으로 실패할 때 `{ repos: []
 - 기존 NOVEL 시그널 처리 로직에 영향 없이 분기만 추가
 - dummyRankedResults도 UNKNOWN으로 변경하여 fallback 경로와 일관성 확보
 
+---
+
+## ADR-019: 랭킹 가중치 재조정 — 인기 편향에서 관련성 중심으로
+
+### 상태
+승인됨
+
+### 맥락
+ESTABLISHED 시그널에서 GitHub star 가중치가 25%로 descMatch(20%)보다 높아, 사용자 아이디어와 무관하지만 인기 있는 프로젝트(예: TensorFlow)가 관련성 높은 소규모 프로젝트보다 상위에 노출되는 편향이 있었다. 또한 README 길이(>500자 → 1.0, 아니면 0.3)와 topics(있음 → 1.0, 없음 → 0)가 이진 스코어링이어서 소규모 프로젝트에 체계적 불이익을 주었다.
+
+### 결정
+
+**ESTABLISHED 가중치 변경:**
+| 요소 | 변경 전 | 변경 후 |
+|------|---------|---------|
+| stars | 25% | 15% |
+| descMatch | 20% | 30% |
+| 나머지 | 동일 | 동일 |
+
+**README 스코어 연속화:**
+- 변경 전: `length > 500 ? 1.0 : 0.3` (이진)
+- 변경 후: `min(length / 1000, 1.0)` (연속, README 없으면 0.1)
+
+**Topics 스코어 비례화:**
+- 변경 전: `topics.length > 0 ? 1.0 : 0` (이진)
+- 변경 후: `min(count / 3, 1.0)` (개수 비례)
+
+### 근거
+- 사용자의 핵심 관심사는 "내 아이디어와 비슷한 프로젝트"이지 "가장 인기 있는 프로젝트"가 아님
+- descMatch 30%로 올리면 키워드 매칭이 높은 프로젝트가 상위에 올라 Build/Fork/Contribute 추천의 정확도 향상
+- README/topics의 연속 스코어링으로 소규모이지만 README가 정성스러운 프로젝트가 적절히 평가됨
+- EMERGING 가중치는 이미 stars 10%, recency 30%로 관련성 중심이므로 변경 불필요
+
+---
+
+## ADR-020: Tavily 경쟁사 검색에 한국 플랫폼 추가
+
+### 상태
+승인됨
+
+### 맥락
+Tavily competitors 카테고리의 `include_domains`가 ProductHunt, G2, AlternativeTo, TechCrunch로만 구성되어 서양 시장 편향이 있었다. 한국 시장의 유사 서비스(토스, 당근마켓, 캐시워크 등)나 한국 스타트업 커뮤니티(disquiet) 정보가 경쟁사 분석에서 누락되었다.
+
+### 결정
+competitors 카테고리의 `include_domains`에 한국 플랫폼 2개를 추가:
+- `disquiet.io` — 한국 IT 프로덕트 커뮤니티 (ProductHunt 한국 버전)
+- `wanted.co.kr` — 한국 IT 기업/서비스 정보
+
+### 근거
+- `include_domains`는 "이 도메인에서만 검색"이 아니라 "이 도메인을 우선 포함" 동작이므로 기존 서양 플랫폼 검색에 영향 없음
+- disquiet.io는 한국 IT 프로덕트 커뮤니티로, 한국 시장의 유사 서비스 발견에 최적
+- P1에서 추가한 `korean` 카테고리(tistory, velog, okky 등)와 역할 분리: competitors는 "제품/서비스", korean은 "기술 블로그/커뮤니티"
+
+---
+
+## ADR-021: Confidence 산출 근거 구조화 — 주관적 숫자에서 기준표 기반으로
+
+### 상태
+승인됨
+
+### 맥락
+LLM이 생성하는 확신도(0.0~1.0)가 "검색 결과의 양과 질에 비례하여 설정하세요"라는 모호한 지침만 있어 주관적으로 생성되었다. 사용자에게는 과학적 지표처럼 보이지만 실제로는 calibration 없는 LLM 출력이라는 괴리가 있었다.
+
+### 결정
+`REPORT_SYSTEM_PROMPT`에 5단계 confidence 산출 기준표를 추가:
+
+| 범위 | 조건 |
+|------|------|
+| 0.85~0.95 | ESTABLISHED + LOW/MEDIUM 복잡도 + 리스크 없음 |
+| 0.70~0.85 | ESTABLISHED + HIGH, 또는 EMERGING + LOW |
+| 0.50~0.70 | EMERGING + MEDIUM↑, 또는 리스크 존재 |
+| 0.30~0.50 | NOVEL + 참고 부족, 또는 HIGH_RISK |
+| 0.30 이하 | UNKNOWN (검색 장애), 또는 UNAVAILABLE 데이터 |
+
+영향 요소(GitHub 결과 수, 웹 검색 결과, 데이터 의존성, 복잡도, 리스크)별 높음/낮음 매핑 테이블도 함께 제공.
+
+### 근거
+- 기준표가 있으면 LLM이 동일 조건에서 일관된 confidence를 생성할 가능성이 높아짐
+- 사용자가 "왜 0.7인가?"라는 질문에 기준표를 참조한 근거 있는 답변이 가능
+- UNKNOWN 시그널(ADR-018)과 연동하여 검색 장애 시 자동으로 0.3 이하 가이드라인 적용
+- 기존 판정 보정 예시(rating_examples)와 일관성 유지 — 예시의 confidence 값들이 기준표 범위 내에 있음
+
