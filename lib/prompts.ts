@@ -17,6 +17,9 @@ export const REPORT_SYSTEM_PROMPT = `당신은 VibCheck의 아이디어 검증 �
 
 [판정 이유 2~3문장]
 
+## ⚠️ 법적 경고  ← HIGH_RISK일 때만 (판정 바로 아래)
+## ⚠️ 플랫폼 제한  ← ENTERPRISE_ONLY/DEPRECATED일 때만
+
 ## 필요 기술 스택
 - [기술1] — [쉬운 설명]
 - [기술2] — [쉬운 설명]
@@ -40,6 +43,19 @@ export const REPORT_SYSTEM_PROMPT = `당신은 VibCheck의 아이디어 검증 �
 - "조건부 가능" — 일부 학습이나 범위 축소가 필요
 - "개발자 도움 필요" — 전문 지식이 필요한 부분 존재
 - "현재 기술로 어려움" — 기술적 한계 또는 데이터 부재
+
+# 리스크 기반 판정 오버라이드
+
+복잡도 × 데이터 매트릭스로 기본 판정을 정한 뒤, 리스크가 있으면 하향 조정하세요:
+
+플랫폼 리스크:
+  REVIEW_REQUIRED → 최소 "조건부 가능" + 승인 실패 가능성 경고
+  ENTERPRISE_ONLY → 최소 "현재 기술로 어려움" (개인 개발자 접근 불가)
+  DEPRECATED      → 최소 "현재 기술로 어려움" + 대안 API 제시
+
+법적 리스크:
+  CAUTION   → 판정 유지 + "법적 주의사항" 섹션 필수 추가
+  HIGH_RISK → 최소 "조건부 가능" + "법적 경고" 섹션을 판정 바로 아래 최상단 배치
 
 # 판정 보정 예시
 <rating_examples>
@@ -168,6 +184,42 @@ ${unavailable.map((d) => `<dependency name="${d.name}" status="UNAVAILABLE">${d.
 3. 데이터 범위를 축소하면 가능해지는지
 4. 유사한 해외 사례에서는 어떻게 해결했는지
 </data_dependency_warning>`);
+  }
+
+  // Platform risk warning
+  if (
+    extraction.platform_risk &&
+    extraction.platform_risk.status !== "NONE" &&
+    extraction.platform_risk.status !== "OPEN"
+  ) {
+    const pr = extraction.platform_risk;
+    parts.push(`
+<platform_risk status="${pr.status}" platform="${pr.platform}">
+${pr.detail}
+반드시 다음을 포함하라:
+1. 해당 플랫폼 API의 현재 접근 정책을 정확히 기술
+2. 개인 개발자가 접근 가능한지 여부
+3. 플랫폼에 종속되지 않는 대안 접근법
+4. 유사하지만 API 정책이 열린 대체 플랫폼
+</platform_risk>`);
+  }
+
+  // Legal risk warning
+  const legalRisks = (extraction.legal_risks || []).filter(
+    (r) => r.severity === "CAUTION" || r.severity === "HIGH_RISK"
+  );
+  if (legalRisks.length > 0) {
+    const maxSeverity = legalRisks.some((r) => r.severity === "HIGH_RISK")
+      ? "HIGH_RISK"
+      : "CAUTION";
+    parts.push(`
+<legal_risk severity="${maxSeverity}">
+이 아이디어에 다음 법적 리스크가 존재합니다:
+${legalRisks.map((r) => `- [${r.category}] (${r.severity}) ${r.detail}`).join("\n")}
+
+반드시 리포트 최상단(판정 바로 아래)에 법적 경고 섹션을 배치하라.
+"만들 수 있는가"보다 "만들어도 되는가"를 먼저 답하라.
+</legal_risk>`);
   }
 
   // AMBIGUOUS caution

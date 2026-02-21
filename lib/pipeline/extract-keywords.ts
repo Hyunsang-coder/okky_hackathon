@@ -20,6 +20,28 @@ const KeywordExtractionSchema = z.object({
       })
     )
     .optional(),
+  platform_risk: z
+    .object({
+      status: z.enum([
+        "NONE",
+        "OPEN",
+        "REVIEW_REQUIRED",
+        "ENTERPRISE_ONLY",
+        "DEPRECATED",
+      ]),
+      platform: z.string(),
+      detail: z.string(),
+    })
+    .optional(),
+  legal_risks: z
+    .array(
+      z.object({
+        severity: z.enum(["NONE", "CAUTION", "HIGH_RISK"]),
+        category: z.enum(["개인정보", "저작권", "초상권", "약관위반", "기타"]),
+        detail: z.string(),
+      })
+    )
+    .optional(),
   reason: z.string(),
   alternative: z.string().optional(),
   github_queries: z.array(z.string()),
@@ -53,7 +75,22 @@ const KEYWORD_EXTRACTION_PROMPT = `사용자의 아이디어를 분석하라.
 - "BUILDABLE" — API는 없지만 직접 데이터 수집/구축 가능
 - "UNAVAILABLE" — 해당 데이터 자체가 존재하지 않거나 접근 불가
 
-4단계: 분류 결과에 따라
+4단계: 플랫폼 종속 리스크 평가 (SEARCHABLE/AMBIGUOUS만)
+아이디어가 특정 플랫폼의 API에 의존하는 경우, 해당 플랫폼의 접근 정책을 평가하라:
+- "NONE" — 특정 플랫폼에 종속되지 않음
+- "OPEN" — 공개 API가 존재하고 개인 개발자도 자유롭게 사용 가능
+- "REVIEW_REQUIRED" — API 사용 시 심사/승인이 필요 (예: Meta Graph API 앱 심사)
+- "ENTERPRISE_ONLY" — 기업 계약이 필요하여 개인 개발자 접근 불가 (예: Twitter Firehose)
+- "DEPRECATED" — 해당 API가 폐기되었거나 폐기 예정
+
+5단계: 법적/규제 리스크 평가 (SEARCHABLE/AMBIGUOUS만)
+아이디어가 법적 리스크를 수반하는지 평가하라. 해당하는 항목을 모두 나열하라:
+- "NONE" — 법적 리스크 없음
+- "CAUTION" — 주의가 필요한 법적 이슈 존재 (예: 개인정보 수집 시 동의 필요)
+- "HIGH_RISK" — 심각한 법적 리스크 (예: 저작권 침해, 초상권 침해, 약관 위반)
+카테고리: "개인정보", "저작권", "초상권", "약관위반", "기타"
+
+6단계: 분류 결과에 따라
 - SEARCHABLE/AMBIGUOUS → 검색 키워드를 추출. 도메인 키워드, 기술 키워드, 유의어, GitHub topic 후보를 다양하게 추출하라.
 - IMPOSSIBLE → 불가능 이유와 대안 아이디어를 제시. github_queries, tavily_queries, topics는 빈 배열/객체로 반환.
 

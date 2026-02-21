@@ -6,6 +6,21 @@ export type DataStatus =
   | "BUILDABLE"
   | "UNAVAILABLE";
 export type EcosystemSignalType = "ESTABLISHED" | "EMERGING" | "NOVEL";
+export type PlatformRiskStatus = "NONE" | "OPEN" | "REVIEW_REQUIRED" | "ENTERPRISE_ONLY" | "DEPRECATED";
+export type LegalRiskSeverity = "NONE" | "CAUTION" | "HIGH_RISK";
+export type LegalRiskCategory = "개인정보" | "저작권" | "초상권" | "약관위반" | "기타";
+
+export interface PlatformRisk {
+  status: PlatformRiskStatus;
+  platform: string;
+  detail: string;
+}
+
+export interface LegalRisk {
+  severity: LegalRiskSeverity;
+  category: LegalRiskCategory;
+  detail: string;
+}
 
 export interface DataDependency {
   name: string;
@@ -19,6 +34,8 @@ export interface KeywordExtraction {
   data_dependencies?: DataDependency[];
   reason: string;
   alternative?: string;
+  platform_risk?: PlatformRisk;
+  legal_risks?: LegalRisk[];
   github_queries: string[];
   tavily_queries: {
     competitors: string;
