@@ -43,7 +43,7 @@ function updateStep(
   return steps.map((s) => (s.id === id ? { ...s, ...update } : s));
 }
 
-export function useAnalysis(): UseAnalysisReturn {
+export function useAnalysis(apiPath = "/api/analyze"): UseAnalysisReturn {
   const [state, setState] = useState<AnalysisState>("idle");
   const [steps, setSteps] = useState<ProgressStep[]>(INITIAL_STEPS);
   const [report, setReport] = useState("");
@@ -64,7 +64,7 @@ export function useAnalysis(): UseAnalysisReturn {
     setError(null);
 
     try {
-      const res = await fetch("/api/analyze", {
+      const res = await fetch(apiPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idea }),
@@ -135,7 +135,7 @@ export function useAnalysis(): UseAnalysisReturn {
       setError(err instanceof Error ? err.message : "Unknown error");
       setState("error");
     }
-  }, []);
+  }, [apiPath]);
 
   return { state, steps, report, reportMeta, searchContext, error, startAnalysis };
 }
