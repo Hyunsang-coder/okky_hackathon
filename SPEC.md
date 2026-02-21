@@ -46,6 +46,8 @@
 - 키워드 추출 시 아이디어를 `SEARCHABLE` / `IMPOSSIBLE` / `AMBIGUOUS`로 분류한다
 - `IMPOSSIBLE` 판정 시 검색을 생략하고 단축 리포트를 즉시 생성한다 (비용 절감)
 - 복잡도(`LOW` ~ `VERY_HIGH`)와 데이터 의존성(`AVAILABLE_FREE` / `AVAILABLE_PAID` / `BUILDABLE` / `UNAVAILABLE`)을 함께 평가한다
+- 플랫폼 종속 리스크를 평가한다 (`NONE` / `OPEN` / `REVIEW_REQUIRED` / `ENTERPRISE_ONLY` / `DEPRECATED`)
+- 법적/규제 리스크를 평가한다 (`NONE` / `CAUTION` / `HIGH_RISK`, 카테고리: 개인정보/저작권/초상권/약관위반/기타)
 
 #### FR-2.1 GitHub 검색
 - GitHub REST API로 유사 레포지토리를 검색한다
@@ -73,6 +75,12 @@ SSE 스트리밍으로 실시간 출력하며, 섹션별 카드 UI로 구조화�
 - **조건부 가능** — 특정 조건(유료 API, 일부 기술 학습 등)이 충족되면 가능
 - **개발자 도움 필요** — 핵심 기능 중 전문 개발 지식이 필요한 부분 존재
 - **현재 기술로 어려움** — 기술적 한계 또는 극도로 높은 복잡도
+
+**리스크 기반 판정 오버라이드:**
+- 플랫폼 리스크 `REVIEW_REQUIRED` → 최소 "조건부 가능"
+- 플랫폼 리스크 `ENTERPRISE_ONLY` / `DEPRECATED` → 최소 "현재 기술로 어려움"
+- 법적 리스크 `CAUTION` → 판정 유지 + "법적 주의사항" 섹션 추가
+- 법적 리스크 `HIGH_RISK` → 최소 "조건부 가능" + "법적 경고" 섹션을 판정 바로 아래 배치
 
 **상세 내용:**
 - 판정 이유 (명확하고 비개발자가 이해할 수 있는 언어로)

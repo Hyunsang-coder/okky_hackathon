@@ -291,3 +291,43 @@ interface ReportMeta { verdict: Verdict | null; confidence: number | null; secti
 - 히스토리의 기존 문자열 데이터와 호환을 위해 `isVerdict()` 타입 가드 제공
 - 서버에서 구조화 데이터를 전송하므로, 클라이언트 UI 코드에 리포트 포맷 지식이 불필요
 
+---
+
+## ADR-013: Phase 0 플랫폼/법적 리스크 축 추가
+
+### 상태
+승인됨
+
+### 맥락
+Phase 0 사전 심사(ADR-006)에서 복잡도와 데이터 의존성만 평가하고 있었다. 이로 인해 플랫폼 API 정책 제한(예: Instagram 자동 포스팅 — Meta 앱 심사 필수)이나 법적 리스크(예: 타인 얼굴 합성 — 초상권 침해)가 있는 아이디어도 "바이브코딩으로 가능"으로 오판될 수 있는 구조적 결함이 존재했다.
+
+### 결정
+Phase 0 키워드 추출에 두 개의 리스크 축을 추가한다:
+
+**플랫폼 종속 리스크** (`PlatformRisk`):
+- `NONE` — 특정 플랫폼에 종속되지 않음
+- `OPEN` — 공개 API, 개인 개발자 자유 사용 가능
+- `REVIEW_REQUIRED` — API 심사/승인 필요
+- `ENTERPRISE_ONLY` — 기업 계약 필요, 개인 접근 불가
+- `DEPRECATED` — API 폐기됨/폐기 예정
+
+**법적/규제 리스크** (`LegalRisk[]`):
+- `NONE` / `CAUTION` / `HIGH_RISK`
+- 카테고리: 개인정보, 저작권, 초상권, 약관위반, 기타
+
+**판정 오버라이드 규칙:**
+- 복잡도 × 데이터 매트릭스로 기본 판정 → 리스크에 의한 하향 조정
+- ENTERPRISE_ONLY/DEPRECATED → 최소 "현재 기술로 어려움"
+- HIGH_RISK → 최소 "조건부 가능" + 법적 경고 섹션 최상단 배치
+
+**구현:**
+- `types.ts`: 타입/인터페이스 추가, `KeywordExtraction` 확장
+- `extract-keywords.ts`: Zod 스키마 + 프롬프트에 4-5단계 추가
+- `prompts.ts`: 시스템 프롬프트에 오버라이드 규칙, 유저 프롬프트에 XML 주입
+
+### 근거
+- "만들 수 있는가" 이전에 "만들어도 되는가", "접근 가능한가"를 먼저 답해야 비개발자에게 정확한 판정 제공
+- 기존 Haiku 호출에 추가 지시만 포함하므로 비용 추가 미미
+- XML 주입 패턴이 기존 complexity_warning, data_dependency_warning과 동일하여 일관성 유지
+- `app/api/analyze/route.ts` 수정 불필요 — extraction 객체를 그대로 전달하므로 새 필드 자동 전파
+
