@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { ProgressStep } from "@/components/AnalysisProgress";
+import { parseSSELine } from "@/lib/sse";
 
 export type AnalysisState =
   | "idle"
@@ -84,49 +85,43 @@ export function useAnalysis(): UseAnalysisReturn {
         buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6);
+          const message = parseSSELine(line);
+          if (!message) continue;
 
-          if (data === "[DONE]") {
+          if (message.type === "done") {
             setState("complete");
             continue;
           }
 
-          try {
-            const event = JSON.parse(data);
+          if (message.type === "progress") {
+            const { step, status, detail } = message.data;
 
-            if (event.type === "progress") {
-              const { step, status, detail } = event.data;
+            if (status === "started") {
+              setSteps((prev) =>
+                updateStep(prev, step, { status: "active", detail })
+              );
 
-              if (status === "started") {
-                setSteps((prev) =>
-                  updateStep(prev, step, { status: "active", detail })
-                );
-
-                if (step === "github" || step === "tavily") {
-                  setState("searching");
-                } else if (step === "report" || step === "impossible") {
-                  setState("generating");
-                }
-              } else if (status === "completed") {
-                setSteps((prev) =>
-                  updateStep(prev, step, { status: "completed", detail })
-                );
-              } else if (status === "error") {
-                setSteps((prev) =>
-                  updateStep(prev, step, { status: "error", detail })
-                );
+              if (step === "github" || step === "tavily") {
+                setState("searching");
+              } else if (step === "report") {
+                setState("generating");
               }
-            } else if (event.type === "text") {
-              setReport((prev) => prev + event.data);
-            } else if (event.type === "context") {
-              setSearchContext(event.data);
-            } else if (event.type === "error") {
-              setError(event.data);
-              setState("error");
+            } else if (status === "completed") {
+              setSteps((prev) =>
+                updateStep(prev, step, { status: "completed", detail })
+              );
+            } else if (status === "error") {
+              setSteps((prev) =>
+                updateStep(prev, step, { status: "error", detail })
+              );
             }
-          } catch {
-            // skip non-JSON lines
+          } else if (message.type === "text") {
+            setReport((prev) => prev + message.data);
+          } else if (message.type === "context") {
+            setSearchContext(message.data);
+          } else if (message.type === "error") {
+            setError(message.data);
+            setState("error");
           }
         }
       }

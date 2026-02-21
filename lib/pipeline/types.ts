@@ -67,28 +67,3 @@ export interface RankedResults {
   ecosystemSignal: EcosystemSignalType;
   contextXml: string;
 }
-
-// SSE event types
-export type AnalysisEventType =
-  | "progress"
-  | "text"
-  | "context"
-  | "error"
-  | "done";
-
-export interface AnalysisEvent {
-  type: AnalysisEventType;
-  data: string;
-}
-
-export interface ProgressData {
-  step:
-    | "keywords"
-    | "github"
-    | "tavily"
-    | "ranking"
-    | "report"
-    | "impossible";
-  status: "started" | "completed" | "error";
-  detail?: string;
-}

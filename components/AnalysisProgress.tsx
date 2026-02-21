@@ -1,7 +1,9 @@
 "use client";
 
+import type { ProgressStepId } from "@/lib/sse";
+
 export interface ProgressStep {
-  id: string;
+  id: ProgressStepId;
   label: string;
   status: "pending" | "active" | "completed" | "error";
   detail?: string;
