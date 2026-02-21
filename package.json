@@ -9,8 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.46",
     "@ai-sdk/react": "^3.0.99",
+    "@openrouter/ai-sdk-provider": "^2.2.3",
     "ai": "^6.0.97",
     "next": "16.1.6",
     "react": "19.2.3",

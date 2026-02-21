@@ -1,13 +1,17 @@
 import { streamText } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
 export const maxDuration = 60;
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = streamText({
-    model: anthropic("claude-sonnet-4-20250514"),
+    model: openrouter("anthropic/claude-sonnet-4"),
     system: `당신은 VibCheck의 아이디어 검증 전문가입니다.
 비개발자 출신 바이브 코더가 아이디어를 가져오면, 그 아이디어의 구현 가능성을 분석해주세요.
 
