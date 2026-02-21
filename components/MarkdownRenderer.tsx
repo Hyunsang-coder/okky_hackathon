@@ -8,6 +8,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
     <div className="prose-custom">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        children={content}
         components={{
           h2: ({ children }) => (
             <h2 className="mb-3 mt-6 text-xl font-bold first:mt-0">

@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 import { defaultModel } from "@/lib/models";
 import { buildChatSystemPrompt } from "@/lib/prompts";
 
@@ -12,10 +12,14 @@ export async function POST(req: Request) {
     searchContext || ""
   );
 
+  // DefaultChatTransport sends UIMessage format (with parts[]),
+  // but streamText expects CoreMessage format (with content).
+  const modelMessages = await convertToModelMessages(messages);
+
   const result = streamText({
     model: defaultModel,
     system: systemPrompt,
-    messages,
+    messages: modelMessages,
   });
 
   return result.toUIMessageStreamResponse();
